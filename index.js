@@ -1,44 +1,48 @@
-const { Client } = require('whatsapp-web.js');
+const { Client, MessageMedia, Buttons } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const path = require('path');
+const categories = require('./Questions/categories.json')
 
-const db = new class {
-    constructor() {
+// const db = new class {
+//     constructor() {
+        
+//     }
 
-    }
-
-    async connectToMongo(database) {
-        const url = `mongodb://localhost:27017/${database}`;
+//     async connectToMongo(database) {
+//         const url = `mongodb://localhost:27017/${database}`;
     
-        try {
-            await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
-            console.log('Connected to MongoDB successfully');
-            return true;
-        } catch (err) {
-            console.error('MongoDB connection error:', err);
-            return false;
-        }
-    }
+//         try {
+//             await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+//             console.log('Connected to MongoDB successfully');
+//             return true;
+//         } catch (err) {
+//             console.error('MongoDB connection error:', err);
+//             return false;
+//         }
+//     }
 
-    async search(query, collection, m) {
-        var schema = new mongoose.Schema({
-                userId: String,
-                name: String,
-                age: Number,
-                email: String,
-                contact: Number
-            }),
-            searchCollection = mongoose.model(collection, schema),
-            method = m in ["find", "findOne", "findById"] ? m : "find",
-            result = await searchCollection[method](query)
-        return result
-    }
-}
+//     async search(query, collection, m) {
+//         var schema = new mongoose.Schema({
+//                 userId: String,
+//                 name: String,
+//                 age: Number,
+//                 email: String,
+//                 contact: Number
+//             }),
+//             searchCollection = mongoose.model(collection, schema),
+//             method = m in ["find", "findOne", "findById"] ? m : "find",
+//             result = await searchCollection[method](query)
+//         return result
+//     }
+// }
 
 class cyberBot {
     constructor() {
         this.client = new Client();
+        this.client.initialize()
+        this.categories = categories[0].opt
+        this.generateQR()
     }
 
     generateQR() {
@@ -48,46 +52,77 @@ class cyberBot {
         });
         this.client.on('ready', async () => {
 
-            var connected = await db.connectToMongo() || !0
+            // var connected = await db.connectToMongo()
+            var connected = !0
 
             if (connected) {
                 console.log('Chatbot is live!')
-                this.handleIntro()
+                this.receiveMessage()
             }
         });
     }
 
-    handleIntro() {
-        this.client.on('message', async (message) => {
-            senderNumber = message.from.split['@'][0]
-            // this.user = db.search({
-            //     contact: this.senderNumber
-            // }, 'user_ref', 'findOne')
-
-            // if (this.user) {
-                //var reply = `Hello ${exists.name}! How can I help you today?`
-                // await client.sendMessage(message.from, reply)
-                // this.sendMessage('categories')
-            // }
-            var reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\n
-            Could you please provide the following information?`
-            // await client.sendMessage(message.from, reply)
-            // this.sendMessage('starters', senderNumber)
+    receiveMessage(d) {
+        return new Promise.all((resolve) => {
+            this.client.on('message', async (message) => {
+                var sender = message.from.split('@')[0],
+                    user = 'abc'
+    
+                // this.user = db.search({
+                //     contact: this.senderNumber
+                // }, 'user_ref', 'findOne')
+    
+                // this.storeMessages(message, sender)
+                console.log(sender)
+                if (d)
+                    return
+                
+                if (message in this.categories) {
+                    this.sendMessage(message, message.from)
+                } else if (null == user) {
+                    var reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\nCould you please provide the following information?`
+                    await this.client.sendMessage(message.from, reply)
+                    this.sendMessage('starters', message.from)
+                } else {
+                    var reply = `Hello ${user}! How can I help you today?`
+                    await this.client.sendMessage(message.from, reply)
+                    this.sendMessage('categories', message.from)
+                }
+                return
+            })
         })
+        
     }
 
-    sendMessage(type, sender) {
+    async sendMessage(type, sender) {
         const qPath = path.join(__dirname, 'Questions', `${type}.json`)
-
         try {
             const questions = require(qPath)
+            console.log(questions)
+
             for (var c = 0; c<questions.length; c++) {
                 var question = questions[c].q,
-                    opt = 0 === question[c].opt
-                if (opt) {
-                    
-                } else {
+                    opt = questions[c].opt
+                console.log(question)
+                console.log(opt)
 
+                if (false) {
+                    var message = question
+                } else {
+                    var buttons = Array.from({ length: opt.length }, (v, i) => {
+                        return { body: opt[i] };
+                    })
+                    console.log(buttons)
+                    var message = new Buttons(question, buttons, 'title', 'footer');
+                    console.log(message)
+                }
+
+                await this.client.sendMessage(sender, message);
+
+                if (question.includes("E-mail for verification")) {
+                    this.receiveMessage('verify')
+                } else {
+                    this.receiveMessage('data')
                 }
             }
         } catch (err) {
@@ -100,13 +135,8 @@ class cyberBot {
     }
 }
 
-client.on('message', async message => {
-    console.log(message.body)
-    if (msg.hasMedia) {
-        const media = await msg.downloadMedia();
-        // do something with the media data here
-        console.log(media)  
+new class {
+    constructor() {
+        new cyberBot
     }
-})
-
-client.initialize();
+}
