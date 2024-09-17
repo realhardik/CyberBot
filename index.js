@@ -37,11 +37,20 @@ const categories = require('./Questions/categories.json')
 //     }
 // }
 
+const h = {
+    bind: (r, e) => {
+        var s = e.length;
+        for (let t = 0; t < s; t++)
+            r[e[t]] = r[e[t]].bind(r)
+    }
+}
+
 class cyberBot {
     constructor() {
         this.client = new Client();
         this.client.initialize()
         this.categories = categories[0].opt
+        h.bind(this, ['generateQR', 'receiveMessage', 'sendMessage', 'storeMessages'])
         this.generateQR()
     }
 
@@ -63,10 +72,10 @@ class cyberBot {
     }
 
     receiveMessage(d) {
-        return new Promise.all((resolve) => {
-            this.client.on('message', async (message) => {
+        return new Promise((resolve) => {
+            this.client.once('message', async (message) => {
                 var sender = message.from.split('@')[0],
-                    user = 'abc'
+                    user = null
     
                 // this.user = db.search({
                 //     contact: this.senderNumber
@@ -88,7 +97,7 @@ class cyberBot {
                     await this.client.sendMessage(message.from, reply)
                     this.sendMessage('categories', message.from)
                 }
-                return
+                resolve(message.body)
             })
         })
         
@@ -106,7 +115,7 @@ class cyberBot {
                 console.log(question)
                 console.log(opt)
 
-                if (false) {
+                if (!opt || opt.length === 0) {
                     var message = question
                 } else {
                     var buttons = Array.from({ length: opt.length }, (v, i) => {
@@ -120,9 +129,9 @@ class cyberBot {
                 await this.client.sendMessage(sender, message);
 
                 if (question.includes("E-mail for verification")) {
-                    this.receiveMessage('verify')
+                    await this.receiveMessage('verify')
                 } else {
-                    this.receiveMessage('data')
+                    await this.receiveMessage('data')
                 }
             }
         } catch (err) {
