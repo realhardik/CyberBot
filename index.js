@@ -71,20 +71,22 @@ class cyberBot {
         });
     }
 
-    receiveMessage(d) {
+    receiveMessage(t, s) {
         return new Promise((resolve) => {
             this.client.once('message', async (message) => {
                 var sender = message.from.split('@')[0],
-                    user = null
+                    user = s || null
     
                 // this.user = db.search({
                 //     contact: this.senderNumber
                 // }, 'user_ref', 'findOne')
     
                 // this.storeMessages(message, sender)
-                console.log(sender)
-                if (d)
+                
+                if (t) {
+                    resolve(message.body)
                     return
+                }
                 
                 if (message in this.categories) {
                     this.sendMessage(message, message.from)
@@ -107,7 +109,7 @@ class cyberBot {
         const qPath = path.join(__dirname, 'Questions', `${type}.json`)
         try {
             const questions = require(qPath)
-            console.log(questions)
+            let response;
 
             for (var c = 0; c<questions.length; c++) {
                 var question = questions[c].q,
@@ -118,20 +120,37 @@ class cyberBot {
                 if (!opt || opt.length === 0) {
                     var message = question
                 } else {
-                    var buttons = Array.from({ length: opt.length }, (v, i) => {
-                        return { body: opt[i] };
-                    })
-                    console.log(buttons)
-                    var message = new Buttons(question, buttons, 'title', 'footer');
+                    var options = Array.from({ length: opt.length }, (v, i) => {
+                        return `${i+1}. ${opt[i]}`
+                    }).join('\n')
+                    message = question + '\n' + options
                     console.log(message)
                 }
 
                 await this.client.sendMessage(sender, message);
 
                 if (question.includes("E-mail for verification")) {
-                    await this.receiveMessage('verify')
+                    response = await this.receiveMessage('verify')
+                    response = response.toLowerCase()
+                    var regex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                        format = response.match(regex),
+                        attempts = 0;
+
+                    while (!format) {
+                        if (attempts>2) {
+                            await this.client.sendMessage(sender, 'Failed to validate email.')
+                            this.receiveMessage()
+                            break
+                        }
+                        format = response.match(regex)
+                        var message = "Please provide valid email"
+                        await this.client.sendMessage(sender, message)
+                        response = await this.receiveMessage('verify')
+                        attempts++
+                    }
+                    this.receiveMessage(null, "abc")
                 } else {
-                    await this.receiveMessage('data')
+                    response = await this.receiveMessage('data')
                 }
             }
         } catch (err) {
