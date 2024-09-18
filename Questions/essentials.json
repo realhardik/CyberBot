@@ -1,25 +1,30 @@
 [
     {
+        "id": "category",
         "q": "Which type of cyberthreat would you like to report?",
         "opt": ["Phishing", "Ransomware", "Malware", "Financial Fraud"],
         "attachments": ""
     },
     {
+        "id": "date",
         "q": "When did the incident occur? (Please provide the date and time)",
         "opt": [],
         "attachments": ""
       },
       {
+        "id": "device",
         "q": "What device were you using at the time of the incident?",
         "opt": ["Mobile", "Laptop", "Desktop", "Other"],
         "attachments": ""
       },
       {
+        "id": "financial_loss",
         "q": "Were there any financial losses or unauthorized transactions as a result of this incident?",
         "opt": ["Yes", "No"],
         "attachments": ""
       },
       {
+        "id": "actions",
         "q": "What actions have you taken since the incident?",
         "opt": [],
         "attachments": ""
