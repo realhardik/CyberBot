@@ -214,12 +214,7 @@ class Flow {
     }
 
     async categories(sender) {
-        var eQuestions = require("./Questions/essentials.json"),
-            category = h.options(categories.q, categories.opt)
-        await this.bot.sendMessage(sender, category)
-        var response = await this.bot.receiveMessage(),
-            sender = response.sender
-        response = h.getOption(categories.opt, response.body)
+        var eQuestions = require("./Questions/essentials.json")
         
         for (var c=0; c<eQuestions.length; c++) {
             var q = eQuestions[c].q,

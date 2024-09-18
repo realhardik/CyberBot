@@ -1,5 +1,10 @@
 [
     {
+        "q": "Which type of cyberthreat would you like to report?",
+        "opt": ["Phishing", "Ransomware", "Malware", "Financial Fraud"],
+        "attachments": ""
+    },
+    {
         "q": "When did the incident occur? (Please provide the date and time)",
         "opt": [],
         "attachments": ""
