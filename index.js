@@ -2,7 +2,7 @@ const { Client, MessageMedia, Buttons } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 // const mongoose = require('mongoose');
 const path = require('path');
-const categories = require('./Questions/categories.json')
+const categories = require('./Questions/categories.json')[0]
 
 // const db = new class {
 //     constructor() {
@@ -42,6 +42,25 @@ const h = {
         var s = e.length;
         for (let t = 0; t < s; t++)
             r[e[t]] = r[e[t]].bind(r)
+    },
+    options: (q, o, m) => {
+        var options = Array.from({ length: o.length }, (v, i) => {
+            return `${i+1}. ${o[i]}`
+        }).join('\n'),
+        temp = `Which questions would you like to answer?\n Provide Option no. separated by comma eg: 1, 2, 3`
+        q = q + "\n" + options + "\n" + (m ?  temp : `Provide Option no. [1-${o.length}]`)
+        return q
+    },
+    getOption: (r, i) => {
+        var input = i.split(',').map(option => option.trim()),
+            uOptions = [...new Set(input.map(Number))].filter(option => option > 0 && option <= r.length)
+            return  (uOptions.length > 0 ? r[uOptions[0]-1] : false)
+    },
+    checkOptions: (i, o) => {
+        var max = o,
+            input = i.split(',').map(option => option.trim()),
+            uOptions = [...new Set(input.map(Number))].filter(option => option > 0 && option <= max)
+        return uOptions
     }
 }
 
@@ -76,7 +95,7 @@ class cyberBot {
                     user = s || null
     
                 // this.user = db.search({
-                //     contact: this.senderNumber
+                //     contact: sender
                 // }, 'user_ref', 'findOne')
     
                 // this.storeMessages(sender, message)
@@ -110,7 +129,6 @@ class cyberBot {
 class Flow {
     constructor() {
         this.bot = new cyberBot
-        this.categories = categories[0].opt
         this.flow = ["greet", "categories", "essential", "related", "options"]
         this.greet()
     }
@@ -123,7 +141,7 @@ class Flow {
             if (res.user) {
                 reply = `Hello ${res.user}! How can I help you today?`
                 await this.bot.sendMessage(res.sender, reply)
-                this.categories()
+                this.categories(res.sender)
             } else if (null == res.user) {
                 reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\nCould you please provide the following information?`
                 await this.bot.sendMessage(res.sender, reply)
@@ -142,27 +160,29 @@ class Flow {
             response,
             sender = res.sender,
             user = {}
+            
 
         for (var c = 0; c<questions.length; c++) {
             let question = questions[c].q,
-                opt = questions[c].opt;
+                opt = questions[c].opt,
+                oflag = !1;
 
             if (!opt || opt.length === 0) {
                 question = question
             } else {
-                var options = Array.from({ length: opt.length }, (v, i) => {
-                    return `${i+1}. ${opt[i]}`
-                }).join('\n')
-                question = question + '\n' + options
+                oflag = !0
+                question = h.options(question, opt)
             }
 
             this.bot.sendMessage(sender, question)
             response = await this.bot.receiveMessage()
+            response = response.body
+            oflag && (response = h.getOption(opt, response))
 
             if (question.includes("E-mail")) {
                 
-                var email = res.body.toLowerCase(),
-                    regex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                var email = response.toLowerCase(),
+                    regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g,
                     format = email.match(regex),
                     attempts = 0;
 
@@ -175,7 +195,7 @@ class Flow {
                     format = email.match(regex)
                     var message = "Please provide valid email"
                     await this.bot.sendMessage(sender, message)
-                    response = await this.bot.receiveMessage('verify')
+                    response = await this.bot.receiveMessage()
                     email = response.body.toLowerCase()
                     attempts++
                 }
@@ -185,16 +205,35 @@ class Flow {
                     user[questions[c].id] = email
                     // db.createUser(user)
                     console.log(user)
-                    this.categories()
+                    this.categories(sender)
                 }
             } else {
-                user[questions[c].id] = response.body
+                user[questions[c].id] = response
             }
         }
     }
 
-    categories() {
+    async categories(sender) {
+        var eQuestions = require("./Questions/essentials.json"),
+            category = h.options(categories.q, categories.opt)
+        await this.bot.sendMessage(sender, category)
+        var response = await this.bot.receiveMessage(),
+            sender = response.sender
+        response = h.getOption(categories.opt, response.body)
         
+        for (var c=0; c<eQuestions.length; c++) {
+            var q = eQuestions[c].q,
+                opt = eQuestions[c].opt,
+                oflag = !1
+            
+            if (0 < opt.length) {
+                oflag = !0
+                q = h.options(q, opt)
+            }
+            await this.bot.sendMessage(sender, q)
+            var response = await this.bot.receiveMessage()
+            // ---
+        }
     }
 
     async verifyEmail(email, sender) {

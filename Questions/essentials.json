@@ -1,0 +1,22 @@
+[
+    {
+        "q": "When did the incident occur? (Please provide the date and time)",
+        "opt": [],
+        "attachments": ""
+      },
+      {
+        "q": "What device were you using at the time of the incident?",
+        "opt": ["Mobile", "Laptop", "Desktop", "Other"],
+        "attachments": ""
+      },
+      {
+        "q": "Were there any financial losses or unauthorized transactions as a result of this incident?",
+        "opt": ["Yes", "No"],
+        "attachments": ""
+      },
+      {
+        "q": "What actions have you taken since the incident?",
+        "opt": [],
+        "attachments": ""
+      }
+]
