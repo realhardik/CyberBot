@@ -53,6 +53,7 @@ const h = {
     getOption: async (options, bot, sender, expected) => {
         let res = await bot.receiveMessage()
         console.log(Boolean(expected))
+        
         if (!expected) {
             res = await h.verify(options, res.body)
 
@@ -63,12 +64,14 @@ const h = {
             }
         } else if (expected) {
             res = expected(res.body)?.trim()?.toLowerCase()
+            console.log(`expected ${res}`)
             while (res.length<2 || !res) {
                 await bot.sendMessage(sender, "Please enter a valid answer.")
                 res = await bot.receiveMessage()
                 res = expected(res.body).toLowerCase()
             }
         }
+        console.log(`return ${res}`)
         return res
     },
     verify: async (options, input) => {
@@ -243,8 +246,9 @@ class Flow {
             } else if (question.includes("age")) {
                 var attempts = 0
                 response = Number(response)
+                console.log(`first: ${response}`)
                 while (response > 99 || response < 15 || isNaN(response)) {
-                    
+                    console.log(`inloop: ${response}`)
                     if (!isNaN(response)) {
                         if (attempts > 3) {
                             this.greet()
@@ -260,7 +264,7 @@ class Flow {
                     }
 
                     response = await this.bot.receiveMessage()
-                    response = Number(response)
+                    response = Number(response.body)
                     attempts++
                 }
             }
@@ -310,15 +314,11 @@ class Flow {
     async categories(user_data) {
         let qPath = path.join(__dirname, "Questions", "types", `${user_data.event.type.replace(" ", "_")}.json`),
             questions = require(qPath),
-            question = h.multipleOptions(questions),
+            question,
             sender = user_data.id
             user_data.event.related = {}
-            
-        await this.bot.sendMessage(sender, question)
-        let response = await this.bot.receiveMessage()
-        var options = h.checkOptions(response.body, questions.length)
 
-        for (var c = 0; c<options.length; c++) {
+        for (var c = 0; c<questions.length; c++) {
             question = questions[options[c]].q
             var opt = questions[options[c]].opt,
                 oflag = !1
