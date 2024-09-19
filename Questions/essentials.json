@@ -1,12 +1,12 @@
 [
     {
-        "id": "category",
+        "id": "type",
         "q": "Which type of cyberthreat would you like to report?",
         "opt": ["Phishing", "Ransomware", "Malware", "Financial Fraud"],
         "attachments": ""
     },
     {
-        "id": "date",
+        "id": "time",
         "q": "When did the incident occur? (Please provide the date and time)",
         "opt": [],
         "attachments": ""
@@ -21,6 +21,12 @@
         "id": "financial_loss",
         "q": "Were there any financial losses or unauthorized transactions as a result of this incident?",
         "opt": ["Yes", "No"],
+        "attachments": ""
+      },
+      {
+        "id": "desc",
+        "q": "Please Describe the incident briefly in 5-6 lines.",
+        "opt": [],
         "attachments": ""
       },
       {

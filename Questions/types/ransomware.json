@@ -1,0 +1,62 @@
+[
+    {
+      "id": "blackmail",
+      "q": "Has the attacker claimed to have sensitive data or threatened to release private or confidential information publicly? (Please state)",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "note",
+      "q": "Did the ransomware attackers leave a ransom note?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "hacker_contact",
+      "q": "Did the attacker provide contact details or methods for further communication, such as email or a number?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "payment_method",
+      "q": "Was a specific payment method requested (e.g., cryptocurrency, bank transfer, personal meet)?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "behavior",
+      "q": "Have you noticed any unusual behavior or activity on your devices after the incident?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "security",
+      "q": "Was any security software installed before the attack occurred?",
+      "opt": ["Yes", "No"],
+      "attachments": ""
+    },
+    {
+      "id": "spread",
+      "q": "Is the device part of a larger network (e.g., corporate network)?",
+      "opt": ["Yes", "No"],
+      "attachments": ""
+    },
+    {
+      "id": "suspect",
+      "q": "Do you suspect any malicious emails, websites, or files might have led to the ransomware attack?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "security_settings",
+      "q": "Have you made any changes to your security settings or systems following the attack?",
+      "opt": [],
+      "attachments": ""
+    },
+    {
+      "id": "support",
+      "q": "Would you like assistance from our tech specialist for further steps?",
+      "opt": ["Yes", "No"],
+      "attachments": ""
+    }
+]

@@ -190,10 +190,10 @@ class Flow {
     async starters(contact) {
         let questions = require("./Questions/starters.json"),
             response,
+            sender = contact,
             user = {
-                contact: contact
+                id: contact
             }
-            
 
         for (var c = 0; c<questions.length; c++) {
             let question = questions[c].q,
@@ -205,8 +205,8 @@ class Flow {
                 question = h.options(question, opt)
             }
 
-            this.bot.sendMessage(user.contact, question)
-            response = await h.getOption(opt, this.bot, user.contact, (oflag ? null : String))
+            this.bot.sendMessage(sender, question)
+            response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
             
             if (question.includes("E-mail")) {
                 var email = response.toLowerCase(),
@@ -216,61 +216,60 @@ class Flow {
 
                 while (!format) {
                     if (attempts>3) {
-                        await this.bot.sendMessage(user.contact, 'Failed to validate email.')
+                        await this.bot.sendMessage(sender, 'Failed to validate email.')
                         this.greet()
                         return
                     }
                     var message = "Please provide valid email"
-                    await this.bot.sendMessage(user.contact, message)
+                    await this.bot.sendMessage(sender, message)
                     response = await this.bot.receiveMessage()
                     email = response.body.toLowerCase()
                     format = email.match(regex)
                     attempts++
                 }
 
-                let verification = await this.verifyEmail(email, user.contact)
+                let verification = await this.verifyEmail(email, sender)
                 if (verification) {
                     user[questions[c].id] = email
                     // db.createUser(user)
-                    console.log(user)
-                    this.essentials(user.contact)
+                    await this.bot.sendMessage(sender, "Now, we will ask questions related to the cyberthreat.")
+                    this.essentials(user)
                     return
                 } else {
                     this.greet()
                     return
                 }
             } else if (question.includes("age")) {
-                console.log(response)
-                response = Number(response)
-                console.log(response)
                 var attempts = 0
-                if (response) {
-                    while (response > 99 && response < 15) {
+                response = Number(response)
+                while (response > 99 || response < 15 || !response) {
+                    
+                    if (response) {
                         if (attempts > 3) {
                             this.greet()
                             return false
                         }
                         if (response<15) {
-                            await this.bot.sendMessage(user.contact, "Only 15+ age users are allowed to use this chatbot.")
+                            await this.bot.sendMessage(sender, "Only 15+ age users are allowed to use this chatbot.")
                         } else if (response>99) {
-                            await this.bot.sendMessage(user.contact, "Please provide a valid age.")
+                            await this.bot.sendMessage(sender, "Please provide a valid age.")
                         }
-                        var i = await this.bot.receiveMessage()
-                        response = Number(i.body)
-                        attempts++
+                    } else {
+                        await this.bot.sendMessage(sender, "Please provide a numeric age.")
                     }
-                } else {
-                    await this.bot.sendMessage(user.contact, "Please provide a valid age.")
-                    this.greet()
+
+                    response = await this.bot.receiveMessage()
+                    response = Number(response)
+                    attempts++
                 }
             }
             user[questions[c].id] = response
         }
     }
 
-    async essentials(sender) {
-        var eQuestions = require("./Questions/essentials.json"),
-            res = {}
+    async essentials(user) {
+        var eQuestions = require("./Questions/essentials.json")
+            user.event = {}
         
         for (var c=0; c<eQuestions.length; c++) {
             var q = eQuestions[c].q,
@@ -281,23 +280,25 @@ class Flow {
                 oflag = !0
                 q = h.options(q, opt)
             }
-            await this.bot.sendMessage(sender, q)
-            var response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
-            res[eQuestions[c].id] = response
+
+            await this.bot.sendMessage(user.id, q)
+            var response = await h.getOption(opt, this.bot, user.id, (oflag ? null : String))
+            user.event[eQuestions[c].id] = response
         }
-        console.log(res)
-        this.categories(sender, res.category)
+        this.categories(user)
     }
 
-    async categories(sender, category) {
-        let qPath = path.join(__dirname, "Questions", `${category}.json`),
+    async categories(user_data) {
+        let qPath = path.join(__dirname, "Questions", "types", `${user_data.event.type.replace(" ", "_")}.json`),
             questions = require(qPath),
-            question = h.multipleOptions(questions)
-        console.log(questions)
+            question = h.multipleOptions(questions),
+            sender = user_data.id
+            user_data.event.related = {}
+            
         await this.bot.sendMessage(sender, question)
         let response = await this.bot.receiveMessage()
         var options = h.checkOptions(response.body, questions.length)
-        console.log(options)
+
         for (var c = 0; c<options.length; c++) {
             question = questions[options[c]].q
             var opt = questions[options[c]].opt,
@@ -310,25 +311,28 @@ class Flow {
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
+            user_data.event.related[questions[c].id] = response
         }
-        this.options(sender)
+        this.options(user_data)
     }
 
-    async options(sender) {
-        let question = h.options("We're almost done! Would you like: ", ["Mitigations tips", "Find Nearby Police Station"])
+    async options(user_data) {
+        console.log(user_data)
+        let question = h.options("We're almost done! Would you like: ", ["Mitigations tips", "Find Nearby Police Station"]),
+            sender = user_data.id
         await this.bot.sendMessage(sender, question)
         let response = await this.bot.receiveMessage()
         response = h.checkOptions(response.body, 2)
-        console.log(response)
+
         if (response[0] == 1) {
             var msg = "Please provide your location using Whatsapp's location sharing"
             await this.bot.sendMessage(sender, msg)
-            response = await this.bot.receiveMessage("l")
+            response = await this.bot.receiveMessage()
             var attempts = 0
 
             while (!response.message.location) {
                 if (attempts > 3) {
-                    await this.bot.sendMessage(sender, "Please try again later.")
+                    await this.bot.sendMessage(sender, "Exiting. Please try again later.")
                     this.greet()
                     return
                 }
@@ -341,10 +345,8 @@ class Flow {
                     lat: response.message.location.latitude,
                     lon: response.message.location.longitude
                 })
-            console.log(data)
             data.forEach(async (loc) => {
                 var location = new Location(loc.lat, loc.lon)
-                console.log(location)
                 await this.bot.sendMessage(sender, location)
             });
         }
@@ -436,18 +438,15 @@ class Flow {
                 return true
             } else {
                 var attempts = 0
-                await this.bot.sendMessage(sender, "Invalid OTP. Please Try again.")
-                return false
-                // while (res != otp) {
-                //     if (attempts > 2) {
-                //         return false
-                //     }
-                //     
-                //     otp = otpGen.generate(6, { upperCaseAlphabets: false, specialChars: false })
-                //     info = await transporter.sendMail(mailOptions);
-                //     await this.bot.sendMessage(sender, "New OTP sent")
-                //     let res = await this.bot.receiveMessage()
-                // }
+                while (res != otp) {
+                    if (attempts > 2) {
+                        return false
+                    }
+                    await this.bot.sendMessage(sender, "Invalid OTP. Please Try again.")
+                    res = await this.bot.receiveMessage()
+                    res = res.body
+                }
+                return true
             }
 
         } catch (error) {
