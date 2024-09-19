@@ -50,10 +50,34 @@ const h = {
         q = q + "\n" + options + "\n" + `Provide Option no. [1-${o.length}]`
         return q
     },
-    getOption: (o, i) => {
-        var input = i.split(',').map(option => option.trim()),
-            uOptions = [...new Set(input.map(Number))].filter(option => option > 0 && option <= o.length)
-            return  (uOptions.length > 0 ? o[uOptions[0]-1] : false)
+    getOption: async (options, bot, sender, expected) => {
+        let res = await bot.receiveMessage()
+        console.log(Boolean(expected))
+        if (!expected) {
+            res = await h.verify(options, res.body)
+
+            while (!res) {
+                await bot.sendMessage(sender, "Please enter a valid numeric option.")
+                res = await bot.receiveMessage()
+                res = await h.verify(options, res.body)
+            }
+        } else if (expected) {
+            res = expected(res.body)?.trim()?.toLowerCase()
+            while (res.length<2 || !res) {
+                await bot.sendMessage(sender, "Please enter a valid answer.")
+                res = await bot.receiveMessage()
+                res = expected(res.body).toLowerCase()
+            }
+        }
+        return res
+    },
+    verify: async (options, input) => {
+        const inputArray = input.split(',')
+                                .map(option => option.trim())
+                                .filter(option => !isNaN(option))
+        const validOptions = [...new Set(inputArray.map(Number))]
+                            .filter(option => option > 0 && option <= options.length)
+        return validOptions.length > 0 ? options[validOptions[0] - 1] : false
     },
     checkOptions: (i, o) => {
         var max = o,
@@ -142,7 +166,7 @@ class Flow {
     }
 
     async greet() {
-        let res = await this.bot.receiveMessage(null, "abc"),
+        let res = await this.bot.receiveMessage(),
             reply;
         if ("hello" === res.body) {
 
@@ -153,7 +177,7 @@ class Flow {
             } else if (null == res.user) {
                 reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\nCould you please provide the following information?`
                 await this.bot.sendMessage(res.sender, reply)
-                this.starters(res)
+                this.starters(res.sender)
             }
 
         } else {
@@ -163,11 +187,12 @@ class Flow {
         }
     }
 
-    async starters(res) {
+    async starters(contact) {
         let questions = require("./Questions/starters.json"),
             response,
-            sender = res.sender,
-            user = {}
+            user = {
+                contact: contact
+            }
             
 
         for (var c = 0; c<questions.length; c++) {
@@ -180,13 +205,10 @@ class Flow {
                 question = h.options(question, opt)
             }
 
-            this.bot.sendMessage(sender, question)
-            response = await this.bot.receiveMessage()
-            response = response.body
-            oflag && (response = h.getOption(opt, response))
-
+            this.bot.sendMessage(user.contact, question)
+            response = await h.getOption(opt, this.bot, user.contact, (oflag ? null : String))
+            
             if (question.includes("E-mail")) {
-                
                 var email = response.toLowerCase(),
                     regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g,
                     format = email.match(regex),
@@ -194,48 +216,51 @@ class Flow {
 
                 while (!format) {
                     if (attempts>3) {
-                        await this.bot.sendMessage(sender, 'Failed to validate email.')
+                        await this.bot.sendMessage(user.contact, 'Failed to validate email.')
                         this.greet()
                         return
                     }
-                    format = email.match(regex)
                     var message = "Please provide valid email"
-                    await this.bot.sendMessage(sender, message)
+                    await this.bot.sendMessage(user.contact, message)
                     response = await this.bot.receiveMessage()
                     email = response.body.toLowerCase()
+                    format = email.match(regex)
                     attempts++
                 }
 
-                let verification = await this.verifyEmail(email, sender)
+                let verification = await this.verifyEmail(email, user.contact)
                 if (verification) {
                     user[questions[c].id] = email
                     // db.createUser(user)
                     console.log(user)
-                    this.essentials(sender)
+                    this.essentials(user.contact)
                     return
                 } else {
                     this.greet()
                     return
                 }
             } else if (question.includes("age")) {
+                console.log(response)
                 response = Number(response)
+                console.log(response)
                 var attempts = 0
                 if (response) {
                     while (response > 99 && response < 15) {
-                        if (attempts > 3)
-                            return (this.greet(), false)
-                        
-                            if (response<15) {
-                                await this.bot.sendMessage(sender, "Only 15+ age users are allowed to use this chatbot.")
-                            } else if (response>99) {
-                                await this.bot.sendMessage(sender, "Please provide a valid age.")
-                            }
+                        if (attempts > 3) {
+                            this.greet()
+                            return false
+                        }
+                        if (response<15) {
+                            await this.bot.sendMessage(user.contact, "Only 15+ age users are allowed to use this chatbot.")
+                        } else if (response>99) {
+                            await this.bot.sendMessage(user.contact, "Please provide a valid age.")
+                        }
                         var i = await this.bot.receiveMessage()
                         response = Number(i.body)
                         attempts++
                     }
                 } else {
-                    await this.bot.sendMessage(sender, "Please provide a valid age.")
+                    await this.bot.sendMessage(user.contact, "Please provide a valid age.")
                     this.greet()
                 }
             }
@@ -257,11 +282,8 @@ class Flow {
                 q = h.options(q, opt)
             }
             await this.bot.sendMessage(sender, q)
-            var response = await this.bot.receiveMessage()
-            response = response.body
-            oflag && (response = h.getOption(opt, response))
-            // ---
-            res[eQuestions[c].id] = response.toLowerCase()
+            var response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
+            res[eQuestions[c].id] = response
         }
         console.log(res)
         this.categories(sender, res.category)
@@ -287,9 +309,7 @@ class Flow {
             }
 
             await this.bot.sendMessage(sender, question)
-            response = await this.bot.receiveMessage()
-            response = response.body
-            oflag && (response = h.getOption(opt, response))
+            response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
         }
         this.options(sender)
     }
