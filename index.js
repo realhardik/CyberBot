@@ -1,4 +1,4 @@
-const { Client, MessageMedia, Buttons, Location } = require('whatsapp-web.js');
+const { Client, Location } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 // const mongoose = require('mongoose');
 const path = require('path');
@@ -236,15 +236,16 @@ class Flow {
                     this.essentials(user)
                     return
                 } else {
+                    console.log("not")
                     this.greet()
                     return
                 }
             } else if (question.includes("age")) {
                 var attempts = 0
                 response = Number(response)
-                while (response > 99 || response < 15 || !response) {
+                while (response > 99 || response < 15 || isNaN(response)) {
                     
-                    if (response) {
+                    if (!isNaN(response)) {
                         if (attempts > 3) {
                             this.greet()
                             return false
@@ -285,7 +286,25 @@ class Flow {
             var response = await h.getOption(opt, this.bot, user.id, (oflag ? null : String))
             user.event[eQuestions[c].id] = response
         }
-        this.categories(user)
+        this.techSupport(user)
+    }
+
+    async techSupport(user_data) {
+        var question = h.options("Would you like to talk to one of our Cyber Crime Specialists or continue with Cyberbot's assistance?", ["Yes", "No"])
+        await this.bot.sendMessage(user_data.id, question)
+        let res = await h.getOption(["Yes", "No"], this.bot, user_data.id)
+        if (res.toLowerCase() === "yes") {
+            question = h.options("Here is our pricing for personal support. \nWhich option would you like to go with", ["a", "b", "Chatbot's assistance"])
+            await this.bot.sendMessage(user_data.id, question)
+            res = await h.getOption(["a", "b", "Back"], this.bot, user_data.id)
+            if (res.toLowerCase() == "back") {
+                this.categories(user_data)
+                return
+            }
+            this.greet()
+            return
+        }
+        this.categories(user_data)
     }
 
     async categories(user_data) {
