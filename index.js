@@ -163,14 +163,14 @@ class Flow {
     }
 
     async greet() {
-        let res = await this.bot.receiveMessage(),
+        let res = await this.bot.receiveMessage(null, "abv"),
             reply;
         if ("hello" === res.body) {
 
             if (res.user) {
                 reply = `Hello ${res.user}! How can I help you today?`
                 await this.bot.sendMessage(res.sender, reply)
-                this.essentials(res.sender)
+                this.essentials(res.sender, !0)
             } else if (null == res.user) {
                 reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\nCould you please provide the following information?`
                 await this.bot.sendMessage(res.sender, reply)
@@ -202,7 +202,7 @@ class Flow {
                 question = h.options(question, opt)
             }
 
-            this.bot.sendMessage(sender, question)
+            await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
             
             if (question.includes("E-mail")) {
@@ -266,9 +266,12 @@ class Flow {
         }
     }
 
-    async essentials(user) {
+    async essentials(user, prev) {
         var eQuestions = require("./Questions/essentials.json")
-            user.event = {}
+        user = prev ? (user = {
+            id: user
+        }, user) : user
+        user.event = {}
         
         for (var c=0; c<eQuestions.length; c++) {
             var q = eQuestions[c].q,
@@ -288,7 +291,7 @@ class Flow {
     }
 
     async techSupport(user_data) {
-        var question = h.options("Would you like to talk to one of our Cyber Crime Specialists or continue with Cyberbot's assistance?", ["Cyber Crime Specialist", "Cyber Bot's Assistance"])
+        var question = h.options("Would you like to talk to one of our Cyber Crime Specialists or continue with Cyberbot's assistance?", ["Cyber Crime Specialist", "Chatbot's Assistance"])
         await this.bot.sendMessage(user_data.id, question)
         let res = await h.getOption(["Yes", "No"], this.bot, user_data.id)
         if (res.toLowerCase() === "yes") {
@@ -321,7 +324,7 @@ class Flow {
             question = h.options(question, opt) + ""
 
             await this.bot.sendMessage(sender, question)
-            response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
+            response = await h.getOption(opt, this.bot, sender)
             console.log(response)
             if (response.toLowerCase() === "skip") {
                 continue
@@ -342,9 +345,9 @@ class Flow {
             sender = user_data.id
         await this.bot.sendMessage(sender, question)
         let response = await this.bot.receiveMessage()
-        response = h.getOption(["tips", "police_station"], this.bot, sender)
-
-        if (response == "police_station") {
+        response = await h.getOption(["tips", "police_station"], this.bot, sender)
+        console.log(response)
+        if (response.toLowerCase() == "police_station") {
             var msg = "Please provide your location using Whatsapp's location sharing"
             await this.bot.sendMessage(sender, msg)
             response = await this.bot.receiveMessage()
