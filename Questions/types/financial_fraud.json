@@ -1,68 +1,49 @@
 [
     {
       "id": "type",
-      "q": "What type of online financial fraud did you encounter?",
-      "opt": ["Fake loan offer", "Fraud e-commerce transaction", "Investment scam", "Other"],
+      "q": "Can you provide specific type of online financial fraud?",
+      "follow_up": "What type of fraud was it (e.g., Fake loan offer, Fraud e-commerce transaction, Investment scam, Other)?",
       "attachments": ""
     },
     {
       "id": "approach",
       "q": "How were you approached with this fraudulent offer?",
-      "opt": ["Email", "SMS", "Phone call", "Website", "Social media", "Other"],
+      "follow_up": "Which method was used (e.g., Email, SMS, Phone call, Website, Social media)?",
       "attachments": ""
     },
     {
       "id": "offer",
       "q": "What was promised in the offer (e.g., loans, products, investment returns)?",
-      "opt": [],
+      "follow_up": "What was promised in the offer?",
       "attachments": ""
     },
     {
       "id": "upfront",
       "q": "Were you asked to make an upfront payment or deposit for fees, products, or processing?",
-      "opt": ["Yes", "No"],
+      "follow_up": "",
       "attachments": ""
     },
     {
       "id": "payment",
       "q": "Did you make any payments or provide personal/financial details?",
-      "opt": ["Yes", "No"],
-      "attachments": ""
-    },
-    {
-      "id": "payment2",
-      "q": "If yes, what details were provided?",
-      "opt": [],
+      "follow_up": "What specific details were provided?",
       "attachments": ""
     },
     {
       "id": "payment3",
-      "q": "Through which platform did the transaction occur?",
-      "opt": [],
+      "q": "Did the transaction occur on a specific platform?",
+      "follow_up": "Through which platform did the transaction occur?",
       "attachments": ""
     },
     {
       "id": "info",
-      "q": "Can you please provide the name or URL of the website/platform?",
-      "opt": [],
-      "attachments": ""
-    },
-    {
-      "id": "financial_loss",
-      "q": "Did you suffer any financial losses as a result of this fraud?",
-      "opt": ["Yes", "No"],
+      "q": "Was there a specific website or platform involved in the fraud?",
+      "follow_up": "Can you provide the name or URL of the website/platform?",
       "attachments": ""
     },
     {
       "id": "contacted_authorities",
       "q": "Have you contacted your bank or financial institution to block further transactions?",
-      "opt": ["Yes", "No"],
-      "attachments": ""
-    },
-    {
-      "id": "support",
-      "q": "Would you like further assistance from our Tech Support?",
-      "opt": ["Yes", "No"],
       "attachments": ""
     }
 ]

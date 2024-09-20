@@ -2,49 +2,49 @@
     {
         "id": "source",
         "q": "Was the phishing attempt made via email, SMS, phone call, or another method? (Please state)",
-        "opt": [],
+        "follow_up": "Which method was used (e.g., email, SMS, phone call)?",
         "attachments": ""
     },
     {
         "id": "phishing_company",
         "q": "Did the caller or sender claim to be from a specific organization (e.g., bank, government agency)?",
-        "opt": [],
+        "follow_up": "What organization did they claim to be from?",
         "attachments": ""
     },
     {
         "id": "shared",
         "q": "Did you share any personal information, OTP, credit/debit card details, or passwords? (Please state if any)",
-        "opt": [],
+        "follow_up": "What information did you share?",
         "attachments": ""
     },
     {
         "id": "account",
-        "q": "What type of account(s) was involved in the incident? (e.g., social media, banking, email, other)",
-        "opt": [],
+        "q": "Was any specific account(s) involved in the incident (e.g., social media, banking, email, other)?",
+        "follow_up": "What type of account(s) was involved?",
         "attachments": ""
     },
     {
         "id": "unauth_access",
         "q": "Have any of your online accounts (e.g., email, banking, social media) been accessed without your permission?",
-        "opt": ["Yes", "No"],
+        "follow_up": "Which accounts were accessed?",
         "attachments": ""
     },
     {
         "id": "official",
         "q": "Was the message or call from an official channel or source you had interacted with before?",
-        "opt": ["Yes", "No"],
+        "follow_up": "Have you verified with the official source that they contacted you?",
         "attachments": ""
     },
     {
         "id": "behavior",
         "q": "Have you noticed any unusual behavior or activity on your devices after the incident?",
-        "opt": [],
+        "follow_up": "Can you describe the unusual behavior?",
         "attachments": ""
     },
     {
         "id": "reported",
         "q": "Have you reported this phishing attempt to any relevant authorities (e.g., your bank, the platform, etc)?",
-        "opt": ["Yes", "No"],
+        "follow_up": "Which authority or platform did you report it to?",
         "attachments": ""
     }
 ]

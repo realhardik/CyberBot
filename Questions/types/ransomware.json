@@ -1,62 +1,56 @@
 [
     {
       "id": "blackmail",
-      "q": "Has the attacker claimed to have sensitive data or threatened to release private or confidential information publicly? (Please state)",
-      "opt": [],
+      "q": "Has the attacker claimed to have sensitive data or threatened to release private or confidential information publicly?",
+      "follow_up": "What kind of sensitive data did they claim to have?",
       "attachments": ""
     },
     {
       "id": "note",
       "q": "Did the ransomware attackers leave a ransom note?",
-      "opt": [],
+      "follow_up": "Was there any specific demand mentioned in the note?",
       "attachments": ""
     },
     {
       "id": "hacker_contact",
-      "q": "Did the attacker provide contact details or methods for further communication, such as email or a number?",
-      "opt": [],
+      "q": "Did the attacker provide contact details or methods for further communication, such as email or a number or any other?",
+      "follow_up": "What method of contact was provided?",
       "attachments": ""
     },
     {
       "id": "payment_method",
       "q": "Was a specific payment method requested (e.g., cryptocurrency, bank transfer, personal meet)?",
-      "opt": [],
+      "follow_up": "What payment method was requested?",
       "attachments": ""
     },
     {
       "id": "behavior",
       "q": "Have you noticed any unusual behavior or activity on your devices after the incident?",
-      "opt": [],
+      "follow_up": "Can you describe the unusual behavior?",
       "attachments": ""
     },
     {
       "id": "security",
       "q": "Was any security software installed before the attack occurred?",
-      "opt": ["Yes", "No"],
+      "follow_up": "Was the software up to date and actively running?",
       "attachments": ""
     },
     {
       "id": "spread",
       "q": "Is the device part of a larger network (e.g., corporate network)?",
-      "opt": ["Yes", "No"],
+      "follow_up": "Have other devices in the network shown signs of being affected?",
       "attachments": ""
     },
     {
       "id": "suspect",
       "q": "Do you suspect any malicious emails, websites, or files might have led to the ransomware attack?",
-      "opt": [],
+      "follow_up": "Do you recall which email, website, or file it could be?",
       "attachments": ""
     },
     {
       "id": "security_settings",
       "q": "Have you made any changes to your security settings or systems following the attack?",
-      "opt": [],
-      "attachments": ""
-    },
-    {
-      "id": "support",
-      "q": "Would you like assistance from our tech specialist for further steps?",
-      "opt": ["Yes", "No"],
+      "follow_up": "What changes did you make?",
       "attachments": ""
     }
 ]
