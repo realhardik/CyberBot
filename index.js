@@ -155,9 +155,25 @@ class cyberBot {
     }
 }
 
+class Services {
+    constructor() {
+        this.prompts = path.join(__dirname, "Questions", "prompts.json")
+    }
+
+    createPrompt(incident) {
+        let start = this.prompts["beginning"],
+            type = this.prompts.type[incident.toLowerCase()],
+            end = this.prompts["end"],
+            prompt = start + "\n" + type + "\n" + end,
+            regex = /\$(\w+)/g,
+            placeholders = prompt.matchAll(regex)
+    }
+}
+
 class Flow {
     constructor() {
         this.bot = new cyberBot
+        this.services = new Services
         this.flow = ["greet", "categories", "essential", "related", "options"]
         this.greet()
     }
@@ -475,7 +491,6 @@ class Flow {
         } catch (error) {
             console.error('Error sending email:', error);
         }
-
     }
 }
 

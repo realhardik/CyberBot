@@ -1,7 +1,7 @@
 {
-    "intro": "This is a cyber incident occured with a user whose name is $name and their age is $age. Incident occured on $time and the device that $name were using is $device. It was a $type incident where there was $financial_loss financial loss. Here is a short description of the event: ",
+    "intro": "This is a cyber incident occured with a user whose \nName: $name  \nAge: $age. \nIncident occured on: \n Time: $time \nDevice: $device \nType of incident: $type \nFinancial loss: $financial_loss. \nHere is a short description of the event: ",
     "types": {
-        
+        "phishing": ""
     },
-    "end": "Actions taken since the incident are $actions"
+    "end": "Actions taken since the incident: $actions."
 }
