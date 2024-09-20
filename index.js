@@ -82,12 +82,6 @@ const h = {
                             .filter(option => option > 0 && option <= options.length)
         return validOptions.length > 0 ? options[validOptions[0] - 1] : false
     },
-    checkOptions: (i, o) => {
-        var max = o,
-            input = i.split(',').map(option => (parseInt(option.trim()) - 1)),
-            uOptions = [...new Set(input.map(Number))].filter(option => option >= 0 && option < max)
-        return uOptions
-    },
     multipleOptions: (q) => {
         var starter = "From what we\'ve seen, here are some common questions that might be helpful. \nFeel free to pick the ones you\'d like to answer.",
             options = Array.from({ length: q.length }, (v, i) => {
@@ -294,7 +288,7 @@ class Flow {
     }
 
     async techSupport(user_data) {
-        var question = h.options("Would you like to talk to one of our Cyber Crime Specialists or continue with Cyberbot's assistance?", ["Yes", "No"])
+        var question = h.options("Would you like to talk to one of our Cyber Crime Specialists or continue with Cyberbot's assistance?", ["Cyber Crime Specialist", "Cyber Bot's Assistance"])
         await this.bot.sendMessage(user_data.id, question)
         let res = await h.getOption(["Yes", "No"], this.bot, user_data.id)
         if (res.toLowerCase() === "yes") {
@@ -315,21 +309,28 @@ class Flow {
         let qPath = path.join(__dirname, "Questions", "types", `${user_data.event.type.replace(" ", "_")}.json`),
             questions = require(qPath),
             question,
+            response,
             sender = user_data.id
             user_data.event.related = {}
 
+        await this.bot.sendMessage(sender, `${questions.length} questions will be provided. \nYou can skip any if needed, but providing as many answers as possible\nwill help us offer the best support and assistance.`)
         for (var c = 0; c<questions.length; c++) {
-            question = questions[options[c]].q
-            var opt = questions[options[c]].opt,
-                oflag = !1
+            question = questions[c].q
+            var opt = ["Yes", "No", "Skip"]
 
-            if (opt.length>0) {
-                oflag = !0
-                question = h.options(question, opt)
-            }
+            question = h.options(question, opt) + ""
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
+            console.log(response)
+            if (response.toLowerCase() === "skip") {
+                continue
+            } else if (response.toLowerCase() === "yes") {
+                question = questions[c]["follow_up"]
+                await this.bot.sendMessage(sender, question)
+                response = await h.getOption(null, this.bot, sender, String)
+            }
+            
             user_data.event.related[questions[c].id] = response
         }
         this.options(user_data)
@@ -341,9 +342,9 @@ class Flow {
             sender = user_data.id
         await this.bot.sendMessage(sender, question)
         let response = await this.bot.receiveMessage()
-        response = h.checkOptions(response.body, 2)
+        response = h.getOption(["tips", "police_station"], this.bot, sender)
 
-        if (response[0] == 1) {
+        if (response == "police_station") {
             var msg = "Please provide your location using Whatsapp's location sharing"
             await this.bot.sendMessage(sender, msg)
             response = await this.bot.receiveMessage()
