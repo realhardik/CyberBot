@@ -52,7 +52,6 @@ const h = {
     },
     getOption: async (options, bot, sender, expected) => {
         let res = await bot.receiveMessage()
-        console.log(Boolean(expected))
         
         if (!expected) {
             res = await h.verify(options, res.body)
@@ -64,14 +63,12 @@ const h = {
             }
         } else if (expected) {
             res = expected(res.body)?.trim()?.toLowerCase()
-            console.log(`expected ${res}`)
             while (res.length<2 || !res) {
                 await bot.sendMessage(sender, "Please enter a valid answer.")
                 res = await bot.receiveMessage()
                 res = expected(res.body).toLowerCase()
             }
         }
-        console.log(`return ${res}`)
         return res
     },
     verify: async (options, input) => {
@@ -82,14 +79,62 @@ const h = {
                             .filter(option => option > 0 && option <= options.length)
         return validOptions.length > 0 ? options[validOptions[0] - 1] : false
     },
-    multipleOptions: (q) => {
-        var starter = "From what we\'ve seen, here are some common questions that might be helpful. \nFeel free to pick the ones you\'d like to answer.",
-            options = Array.from({ length: q.length }, (v, i) => {
-                return `${i+1}. ${q[i].q}`
-            }).join('\n'),
-            end = `Provide Option no(s). separated by comma [1-${q.length}]\neg: 1, 2, 3`,
-            question = starter + "\n" + options + "\n" + end
-        return question
+    validate: (type, input) => {
+        return ("email" === type ? (() => {
+            input = input.toLowerCase()
+            var regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,7}$/g,
+                test = regex.test(t)
+            return test
+        })() : "date" === type ? (() => {
+            input = input.toLowerCase().split(",");
+            const date = input[0]?.trim();
+            const time = input[1]?.trim();
+            const timeRegex = /^(\d{1,2})(:\d{2})?\s?(am|pm)?$/i;
+
+            if (date && time) {
+                const dateParts = date.split("/");
+
+                if (dateParts.length !== 3)
+                    return false; 
+
+                const [d, m, y] = dateParts.map(Number);
+
+                if (d && m && y) {
+                    const daysInMonth = [31, (y % 4 === 0 ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+                    if (d > daysInMonth[m - 1] || d < 1 || m > 12 || m < 1 || y > 2024 || y < 2000) {
+                        return false;
+                    }
+
+                    if (timeRegex.test(time)) {
+                        let [hours, minutesWithPeriod] = time.split(":");
+                        let h = Number(hours);
+                        let minutes = minutesWithPeriod ? minutesWithPeriod.slice(0, 2) : '00';
+                        let period = minutesWithPeriod ? minutesWithPeriod.slice(2).trim().toUpperCase() : time.match(/am|pm/i)?.[0]?.toUpperCase() || '';
+
+                        if (h < 1 || h > 12 || Number(minutes) < 0 || Number(minutes) > 59) {
+                            return false;
+                        }
+
+                        if (period && !['AM', 'PM'].includes(period)) {
+                            return false;
+                        }
+
+                        return ({
+                            date: `${d}/${m}/${y}`,
+                            time: `${h}:${minutes} ${period}`
+                        })
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        })()
+        : false)
     }
 }
 
@@ -168,6 +213,61 @@ class Services {
             regex = /\$(\w+)/g,
             placeholders = prompt.matchAll(regex)
     }
+
+    async getPoliceStation(loc) {
+        var api = "https://api.olamaps.io",
+            layers = "layers=venue",
+            types = "types=police",
+            location = `location=${loc.lat},${loc.lon}`,
+            rad = "radius=6000",
+            opt = "strictbounds=false&withCentroid=false",
+            api_key = "api_key=4xd8VFPIZPc3OnFC4oJdlH2chdfC120zIrsRvE36",
+            url = api + "/places/v1/nearbysearch?" + [layers, types, location, rad, opt, api_key].join("&"),
+            nearbyID = [],
+            data = fetch(url) 
+                .then(response => response.json())
+                .then(data => {
+                    // Process the location data
+                    if (data.predictions && Array.isArray(data.predictions)) {
+                        // Iterate through predictions and log place_id
+                        var pred = data.predictions,
+                            fe = pred.length >= 2 ? 2 : pred.length
+                        for (var c=0; c<fe; c++)
+                            nearbyID.push(pred[c].place_id)
+                        return nearbyID
+                    } else {
+                        console.log('No predictions found.');
+                        return []
+                    }
+                })
+                .then(places => {
+                    var locPromises = places.map(pi => {
+                        var placeId = encodeURIComponent(pi);
+                        var detailUrl = api + "/places/v1/details?" + "place_id=" + placeId + "&" + api_key;
+                        
+                        // Return a promise for each place_id
+                        return fetch(detailUrl)
+                            .then(res => res.json())
+                            .then(cd => ({
+                                lat: cd.result.geometry.location.lat,
+                                lon: cd.result.geometry.location.lng
+                            }))
+                            .catch(error => {
+                                console.error(`Error fetching details for place_id ${pi}:`, error);
+                                return null; // Return null for failed fetches
+                            });
+                    });
+                    return Promise.all(locPromises)
+                })
+                .then(validLocations => {
+                    console.log('Nearby locations:', validLocations);
+                    return validLocations; // This returns the array of location objects containing lat and lon
+                })
+                .catch(error => {
+                    console.error('Error fetching location data:', error);
+                });
+        return data
+    }
 }
 
 class Flow {
@@ -220,11 +320,11 @@ class Flow {
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
-            
+            console.log(question)
+            console.log(question.includes("date"))
             if (question.includes("E-mail")) {
                 var email = response.toLowerCase(),
-                    regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g,
-                    format = email.match(regex),
+                    format = h.validate("email", email),
                     attempts = 0;
 
                 while (!format) {
@@ -237,7 +337,7 @@ class Flow {
                     await this.bot.sendMessage(sender, message)
                     response = await this.bot.receiveMessage()
                     email = response.body.toLowerCase()
-                    format = email.match(regex)
+                    format = h.validate("email", email)
                     attempts++
                 }
 
@@ -249,16 +349,13 @@ class Flow {
                     this.essentials(user)
                     return
                 } else {
-                    console.log("not")
                     this.greet()
                     return
                 }
             } else if (question.includes("age")) {
                 var attempts = 0
                 response = Number(response)
-                console.log(`first: ${response}`)
                 while (response > 99 || response < 15 || isNaN(response)) {
-                    console.log(`inloop: ${response}`)
                     if (!isNaN(response)) {
                         if (attempts > 3) {
                             this.greet()
@@ -266,6 +363,8 @@ class Flow {
                         }
                         if (response<15) {
                             await this.bot.sendMessage(sender, "Only 15+ age users are allowed to use this chatbot.")
+                            this.greet()
+                            return
                         } else if (response>99) {
                             await this.bot.sendMessage(sender, "Please provide a valid age.")
                         }
@@ -283,25 +382,58 @@ class Flow {
     }
 
     async essentials(user, prev) {
-        var eQuestions = require("./Questions/essentials.json")
+        var questions = require("./Questions/essentials.json")
         user = prev ? (user = {
             id: user
         }, user) : user
         user.event = {}
-        
-        for (var c=0; c<eQuestions.length; c++) {
-            var q = eQuestions[c].q,
-                opt = eQuestions[c].opt,
+        let response,
+            sender = user.id
+
+        for (var c=0; c<questions.length; c++) {
+            var question = questions[c].q,
+                opt = questions[c].opt,
                 oflag = !1
             
             if (0 < opt.length) {
                 oflag = !0
-                q = h.options(q, opt)
+                question = h.options(question, opt)
             }
 
-            await this.bot.sendMessage(user.id, q)
-            var response = await h.getOption(opt, this.bot, user.id, (oflag ? null : String))
-            user.event[eQuestions[c].id] = response
+            await this.bot.sendMessage(sender, question)
+            response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
+
+            if (question.includes("date")) {
+                response = h.validate("date", response)
+                console.log(response)
+                while (!response) {
+                    var msg = "Provide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\n ex: 07/08/2024, 12:23 am or 08/12/2024 11 am"
+                    await this.bot.sendMessage(sender, msg)
+                    response = await this.bot.receiveMessage()
+                    console.log(response.body)
+                    response = h.validate("date", response.body)
+                }
+                user.event["date"] = response.date
+                user.event["time"] = response.time
+            } else if (question.includes("financial")) {
+                response = response.toLowerCase()
+                user.event[questions[c].id] = response
+                if ("yes" === response) {
+                    await this.bot.sendMessage(sender, questions[c].follow_up)
+                    response = await this.bot.receiveMessage()
+                    response = response.body
+                    var format = /^\d+(,\d+)*$/g.test(response)
+                    while (!format) {
+                        await this.bot.sendMessage(sender, "Please provide entire amount ex. 2000, 10,000")
+                        response = await this.bot.receiveMessage()
+                        response = response.body
+                        format = /^\d+(,\d+)*$/g.test(response)
+                    }
+                    user.event["loss_amount"] = response
+                    continue
+                }
+            }
+            user.event[questions[c].id] = response
         }
         this.techSupport(user)
     }
@@ -360,10 +492,8 @@ class Flow {
         let question = h.options("We're almost done! Would you like: ", ["Mitigations tips", "Find Nearby Police Station"]),
             sender = user_data.id
         await this.bot.sendMessage(sender, question)
-        let response = await this.bot.receiveMessage()
-        response = await h.getOption(["tips", "police_station"], this.bot, sender)
-        console.log(response)
-        if (response.toLowerCase() == "police_station") {
+        let response = await h.getOption(["tips", "location"], this.bot, sender)
+        if (response.toLowerCase() == "location") {
             var msg = "Please provide your location using Whatsapp's location sharing"
             await this.bot.sendMessage(sender, msg)
             response = await this.bot.receiveMessage()
@@ -380,71 +510,20 @@ class Flow {
                 response = await this.bot.receiveMessage()
                 attempts++
             }
-            var data = await this.getPoliceStation({
+            var data = await this.services.getPoliceStation({
                     lat: response.message.location.latitude,
                     lon: response.message.location.longitude
                 })
-            data.forEach(async (loc) => {
+            if (0 === data.length) {
+                await this.bot.sendMessage(sender, "Sorry. Can't find any nearby Police Stations.")
+                return (this.greet(), false)
+            }
+            data.forEach(async (loc, i) => {
                 var location = new Location(loc.lat, loc.lon)
+                await this.bot.sendMessage(sender, `Location ${i+1}:`)
                 await this.bot.sendMessage(sender, location)
             });
         }
-    }
-
-    async getPoliceStation(loc) {
-        var api = "https://api.olamaps.io",
-            layers = "layers=venue",
-            types = "types=police",
-            location = `location=${loc.lat},${loc.lon}`,
-            rad = "radius=6000",
-            opt = "strictbounds=false&withCentroid=false",
-            api_key = "api_key=4xd8VFPIZPc3OnFC4oJdlH2chdfC120zIrsRvE36",
-            url = api + "/places/v1/nearbysearch?" + [layers, types, location, rad, opt, api_key].join("&"),
-            nearbyID = [],
-            data = fetch(url) 
-                .then(response => response.json())
-                .then(data => {
-                    // Process the location data
-                    if (data.predictions && Array.isArray(data.predictions)) {
-                        // Iterate through predictions and log place_id
-                        var pred = data.predictions,
-                            fe = pred.length >= 2 ? 2 : pred.length
-                        for (var c=0; c<fe; c++)
-                            nearbyID.push(pred[c].place_id)
-                        return nearbyID
-                    } else {
-                        console.log('No predictions found.');
-                        return []
-                    }
-                })
-                .then(places => {
-                    var locPromises = places.map(pi => {
-                        var placeId = encodeURIComponent(pi);
-                        var detailUrl = api + "/places/v1/details?" + "place_id=" + placeId + "&" + api_key;
-                        
-                        // Return a promise for each place_id
-                        return fetch(detailUrl)
-                            .then(res => res.json())
-                            .then(cd => ({
-                                lat: cd.result.geometry.location.lat,
-                                lon: cd.result.geometry.location.lng
-                            }))
-                            .catch(error => {
-                                console.error(`Error fetching details for place_id ${pi}:`, error);
-                                return null; // Return null for failed fetches
-                            });
-                    });
-                    return Promise.all(locPromises)
-                })
-                .then(validLocations => {
-                    console.log('Nearby locations:', validLocations);
-                    return validLocations; // This returns the array of location objects containing lat and lon
-                })
-                .catch(error => {
-                    console.error('Error fetching location data:', error);
-                });
-        return data
-        
     }
 
     async verifyEmail(email, sender) {

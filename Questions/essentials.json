@@ -7,7 +7,7 @@
     },
     {
         "id": "time",
-        "q": "When did the incident occur? (Please provide the date and time)",
+        "q": "When did the incident occur?\n\nProvide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\nex: 07/08/2024, 12:23 am or 08/12/2024 11 am",
         "opt": [],
         "attachments": ""
       },
@@ -21,6 +21,7 @@
         "id": "financial_loss",
         "q": "Were there any financial losses or unauthorized transactions as a result of this incident?",
         "opt": ["Yes", "No"],
+        "follow_up": "How much? \n(Provide entire amount) ex. 2000, 10,000",
         "attachments": ""
       },
       {
