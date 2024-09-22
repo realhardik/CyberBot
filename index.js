@@ -202,16 +202,55 @@ class cyberBot {
 
 class Services {
     constructor() {
-        this.prompts = path.join(__dirname, "Questions", "prompts.json")
+        this.prompts = require(path.join(__dirname, "Questions", "prompts.json"))
+        h.bind(this, ['createPrompt', 'getResponse'])
+        this.prompt = false
     }
 
-    createPrompt(incident) {
-        let start = this.prompts["beginning"],
-            type = this.prompts.type[incident.toLowerCase()],
-            end = this.prompts["end"],
-            prompt = start + "\n" + type + "\n" + end,
-            regex = /\$(\w+)/g,
-            placeholders = prompt.matchAll(regex)
+    async createPrompt(incident, questions) {
+        let start = this.prompts["intro"],
+            end = this.prompts["end"][incident.type.toLowerCase()],
+            template = "",
+            varChar = "$",
+            placeholders = ["name", "age", "type", "date", "time", "device", "financial_loss", "desc", "actions"],
+            keys = Object.keys(incident.related),
+            questionsMap = {};
+        questions.forEach(question => {
+            questionsMap[question.id] = question;
+        });
+
+        for (var c = 0; c<placeholders.length; c++) {
+            var placeholderValue = incident[placeholders[c]];
+            start = start.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
+            end = end.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
+        }
+
+        for (var c = 0; c<keys.length; c++) {
+            var questionTemplate = questionsMap[keys[c]]?.template || "undefined";
+            template += `\n${questionTemplate}`;
+            template += incident.related[keys[c]] || "undefined";
+        }
+
+        this.prompt = start + template + end
+        console.log(this.prompt)
+        var tst = await this.getResponse(this.prompt)
+        console.log(tst)
+    }
+
+    async getResponse(prompt) {
+        return (await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({
+              model: 'llama3.1',
+              prompt: prompt || this.prompt,
+              stream: false
+            }) 
+          })
+          .then(response => response.json()) 
+          .then(data => data.response))
     }
 
     async getPoliceStation(loc) {
@@ -386,7 +425,10 @@ class Flow {
         user = prev ? (user = {
             id: user
         }, user) : user
-        user.event = {}
+        user.event = {
+            name: "abc",
+            age: 17
+        }
         let response,
             sender = user.id
 
@@ -415,6 +457,7 @@ class Flow {
                 }
                 user.event["date"] = response.date
                 user.event["time"] = response.time
+                continue
             } else if (question.includes("financial")) {
                 response = response.toLowerCase()
                 user.event[questions[c].id] = response
@@ -484,7 +527,9 @@ class Flow {
             
             user_data.event.related[questions[c].id] = response
         }
-        this.options(user_data)
+        this.services.createPrompt(user_data.event, questions)
+        // this.options(user_data)
+        this.greet()
     }
 
     async options(user_data) {
@@ -576,5 +621,6 @@ class Flow {
 new class {
     constructor() {
         new Flow
+        // new Services
     }
 }

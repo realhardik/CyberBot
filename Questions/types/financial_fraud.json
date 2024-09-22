@@ -3,18 +3,21 @@
       "id": "type",
       "q": "Can you provide specific type of online financial fraud?",
       "follow_up": "What type of fraud was it (e.g., Fake loan offer, Fraud e-commerce transaction, Investment scam, Other)?",
+      "template": "Type of financial fraud: ",
       "attachments": ""
     },
     {
       "id": "approach",
       "q": "How were you approached with this fraudulent offer?",
       "follow_up": "Which method was used (e.g., Email, SMS, Phone call, Website, Social media)?",
+      "template": "Method used to approach: ",
       "attachments": ""
     },
     {
       "id": "offer",
       "q": "What was promised in the offer (e.g., loans, products, investment returns)?",
       "follow_up": "What was promised in the offer?",
+      "template": "Scam offer provided: ",
       "attachments": ""
     },
     {
@@ -27,23 +30,27 @@
       "id": "payment",
       "q": "Did you make any payments or provide personal/financial details?",
       "follow_up": "What specific details were provided?",
+      "template": "Personal/financial details that were provided to hacker: ",
       "attachments": ""
     },
     {
-      "id": "payment3",
+      "id": "payment2",
       "q": "Did the transaction occur on a specific platform?",
       "follow_up": "Through which platform did the transaction occur?",
+      "template": "Platform through which transaction occured: ",
       "attachments": ""
     },
     {
       "id": "info",
-      "q": "Was there a specific website or platform involved in the fraud?",
+      "q": "Was there a specific website or platform name involved in the fraud?",
       "follow_up": "Can you provide the name or URL of the website/platform?",
+      "template": "Website/platform name involved in hack: ",
       "attachments": ""
     },
     {
       "id": "contacted_authorities",
       "q": "Have you contacted your bank or financial institution to block further transactions?",
+      "template": "User contacted bank or financial institution: ",
       "attachments": ""
     }
 ]
