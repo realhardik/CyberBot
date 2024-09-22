@@ -1,25 +1,32 @@
 const { Client, Location } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 // const mongoose = require('mongoose');
+// const { MongoClient } = require('mongodb');
 const path = require('path');
 const categories = require('./Questions/categories.json')[0]
 
 // const db = new class {
 //     constructor() {
-        
+        // let database = "whatweb",
+        //     url = "mongodb://localhost:27017",
+        //     mUrl = url + `/${database}`,
+        //     client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+        //     try {
+        //         await client.connect();
+        //         this.db = client.db(database);
+        //         await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
+        //         console.log('Connected to MongoDB successfully');
+        //         return true;
+        //     } catch (err) {
+        //         console.error('MongoDB connection error:', err);
+        //         return false;
+        //     }
 //     }
 
 //     async connectToMongo(database) {
 //         const url = `mongodb://localhost:27017/${database}`;
     
-//         try {
-//             await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
-//             console.log('Connected to MongoDB successfully');
-//             return true;
-//         } catch (err) {
-//             console.error('MongoDB connection error:', err);
-//             return false;
-//         }
+//         
 //     }
 
 //     async search(query, collection, m) {
@@ -266,9 +273,7 @@ class Services {
             data = fetch(url) 
                 .then(response => response.json())
                 .then(data => {
-                    // Process the location data
                     if (data.predictions && Array.isArray(data.predictions)) {
-                        // Iterate through predictions and log place_id
                         var pred = data.predictions,
                             fe = pred.length >= 2 ? 2 : pred.length
                         for (var c=0; c<fe; c++)
