@@ -172,8 +172,9 @@ class cyberBot {
     receiveMessage(t, s) {
         return new Promise((resolve) => {
             this.client.once('message', async (message) => {
-                var sender = message.from.split('@')[0],
-                    user = s || null
+                if (message.isGroupMsg) 
+                    return
+                var user = s || null
     
                 // this.user = db.search({
                 //     contact: sender
