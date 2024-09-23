@@ -1,9 +1,8 @@
 {
-    "intro": "This is a cyber incident occured with a user whose \nName: $name  \nAge: $age. \nIncident occured on: \n Time: $time \nDevice: $device \nType of incident: $type \nFinancial loss: $financial_loss. \nHere is a short description of the event: $desc",
+    "intro": "This is a cyber incident occured with a user whose \nName: $name  \nAge: $age. \nIncident occured on: \n Time: $time \nDevice: $device \nType of incident: $type \nFinancial loss: $financial_loss. \nHere is a short description of the event: $desc \nActions taken since incident: $actions",
     "end": {
-        "phishing": "\nActions taken since incident: $actions \nPlease provide any advice on what this user should sensibly do next and 5-6 precautionary tips to avoid such attacks in future.",
-        "malware": "\nActions taken since incident: $actions \nPlease provide any advice on what this user should sensibly do next and 5-6 precautionary tips to avoid such attacks in future.",
-        "ransomware": "\nActions taken since incident: $actions \nPlease provide any advice on what this user should sensibly do next and 5-6 precautionary tips to avoid such attacks in future.",
-        "financial_fraud": "\nActions taken since incident: $actions \nPlease provide any advice based on your knowledge on what to do next and any 5-6 precautionary tips to avoid."
+        "1": "\nPlease provide any advice on what this user should sensibly do next and 5-6 precautionary tips to avoid such attacks in future.",
+        "2": "\nPlease provide further steps to help like should they report to authorities or provide 4-5 tips to avoid such incident if possible.",
+        "3": ""
     }
 }

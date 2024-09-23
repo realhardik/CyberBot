@@ -22,12 +22,6 @@ const categories = require('./Questions/categories.json')[0]
         //     }
 //     }
 
-//     async connectToMongo(database) {
-//         const url = `mongodb://localhost:27017/${database}`;
-    
-//         
-//     }
-
 //     async search(query, collection, m) {
 //         var schema = new mongoose.Schema({
 //                 userId: String,
@@ -113,10 +107,11 @@ const h = {
                     }
 
                     if (timeRegex.test(time)) {
-                        let [hours, minutesWithPeriod] = time.split(":");
-                        let h = Number(hours);
-                        let minutes = minutesWithPeriod ? minutesWithPeriod.slice(0, 2) : '00';
-                        let period = minutesWithPeriod ? minutesWithPeriod.slice(2).trim().toUpperCase() : time.match(/am|pm/i)?.[0]?.toUpperCase() || '';
+                        let [hours, minutesWithPeriod] = time.includes(":") ? time.split(":") : [time.match(/^\d{1,2}/)[0], ''],
+                            h = Number(hours),
+                            minutes = minutesWithPeriod ? minutesWithPeriod.slice(0, 2) : '00',
+                            period = time.match(/am|pm/i)?.[0]?.toUpperCase() || ''
+
 
                         if (h < 1 || h > 12 || Number(minutes) < 0 || Number(minutes) > 59) {
                             return false;
@@ -167,6 +162,14 @@ class cyberBot {
             }
         });
     }
+    
+    init() {
+        this.client.on('message', async (message) => {
+            if (message.isGroupMsg) 
+                return
+
+        })
+    }
 
     receiveMessage(t, s) {
         return new Promise((resolve) => {
@@ -216,12 +219,12 @@ class Services {
 
     async createPrompt(incident, questions) {
         let start = this.prompts["intro"],
-            end = this.prompts["end"][incident.type.toLowerCase()],
             template = "",
             varChar = "$",
             placeholders = ["name", "age", "type", "date", "time", "device", "financial_loss", "desc", "actions"],
             keys = Object.keys(incident.related),
-            questionsMap = {};
+            questionsMap = {}
+        this.res = []
         questions.forEach(question => {
             questionsMap[question.id] = question;
         });
@@ -238,13 +241,36 @@ class Services {
             template += incident.related[keys[c]] || "undefined";
         }
 
-        this.prompt = start + template + end
-        console.log(this.prompt)
-        var tst = await this.getResponse(this.prompt)
-        console.log(tst)
+        this.prompt = start + template
     }
 
     async getResponse(prompt) {
+        let end = this.prompts["end"]["1"],
+            rPrompt = this.prompt,
+            prompt = rPrompt + end,
+            res = await this.fetchAI(prompt),
+            thres = res.slice(0, 70).toLowerCase()
+            
+            if (thres.includes("i can't") || thres.includes("i cannot")) {
+                let attempts = 0,
+                    re = 2,
+                    lRes = ""
+                while ((thres.includes("i can't") || thres.includes("i cannot")) && thres.length < 100) {
+                    if (attempts > 1 || re > 3) {
+                        return lRes
+                    }
+                    attempts++
+                    prompt = rPrompt + this.prompts["end"][(re+"")]
+                    res = await this.fetchAI(prompt)
+                    lRes = (res.length > lRes.length) ? res : lRes
+                    thres = res.slice(0, 70).toLowerCase()
+                    re++
+                }
+            }
+            return res
+    }
+
+    async fetchAI(prompt, re) {
         return (await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: {
@@ -257,7 +283,8 @@ class Services {
             }) 
           })
           .then(response => response.json()) 
-          .then(data => data.response))
+          .then(data => data.response)
+        )
     }
 
     async getPoliceStation(loc) {
@@ -512,12 +539,12 @@ class Flow {
             sender = user_data.id
             user_data.event.related = {}
 
-        await this.bot.sendMessage(sender, `${questions.length} questions will be provided. \nYou can skip any if needed, but providing as many answers as possible\nwill help us offer the best support and assistance.`)
+        await this.bot.sendMessage(sender, `${questions.length} questions will be provided. \nYou can skip any if already answered in description of event,\nbut providing as many answers as possible will help us offer the best\nsupport and assistance.`)
         for (var c = 0; c<questions.length; c++) {
             question = questions[c].q
             var opt = ["Yes", "No", "Skip"]
 
-            question = h.options(question, opt) + ""
+            question = h.options(question, opt) + `\n${questions.length-(c+1)} questions left.`
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender)
@@ -533,12 +560,11 @@ class Flow {
             user_data.event.related[questions[c].id] = response
         }
         this.services.createPrompt(user_data.event, questions)
-        // this.options(user_data)
-        this.greet()
+        this.options(user_data)
     }
 
     async options(user_data) {
-        console.log(user_data)
+        let tipsPromise = this.services.getResponse()
         let question = h.options("We're almost done! Would you like: ", ["Mitigations tips", "Find Nearby Police Station"]),
             sender = user_data.id
         await this.bot.sendMessage(sender, question)
@@ -573,7 +599,50 @@ class Flow {
                 await this.bot.sendMessage(sender, `Location ${i+1}:`)
                 await this.bot.sendMessage(sender, location)
             });
+        } else {
+            await this.bot.sendMessage(sender, "Please wait while we generate tips tailored to your specific incident.");
+            var attempts = 0,
+                tips = false
+
+            while (!tips && attempts < 8) {  // You can set a max attempts limit to avoid infinite loops
+                tips = await tipsPromise;  // Now wait for the promise to resolve if it hasn’t yet
+                attempts++;
+                if (!tips) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before trying again
+                }
+            }
+
+            if (tips) {
+                await this.bot.sendMessage(sender, tips); // Handle the case where tips are available
+            } else {
+                await this.bot.sendMessage(sender, "Sorry, we couldn't generate tips at the moment.");
+            }
+            await this.bot.sendMessage(sender, "Hope our services were useful.")
         }
+        this.feedback(user_data)
+    }
+
+    async feedback(data) {
+        let feedbackQs = h.options("Would you like to provice a feedback for this chatbot?", ["Yes", "No"]),
+            response,
+            sender = data.id
+        await this.bot.sendMessage(sender, feedbackQs)
+        response = await h.getOption(["yes", "no"], this.bot, data.id)
+        if (response === "yes") {
+            feedbackQs = h.options("Rating: (1-5)", ["★", "★★", "★★★", "★★★★", "★★★★★"])
+            await this.bot.sendMessage(sender, feedbackQs)
+            response = await h.getOption(["1", "2", "3", "4", "5"], this.bot, sender)
+            feedbackQs = h.options("Could you please share a quick written review with any suggestions or thoughts you may have?", ["Yes", "No"])
+            await this.bot.sendMessage(sender, feedbackQs)
+            response = await h.getOption(["yes", "no"], this.bot, sender)
+            if ("yes" === response) {
+                await this.bot.sendMessage(sender, "You can provide your feedback now.")
+                response = await this.bot.receiveMessage()
+                response = response.body
+                await this.bot.sendMessage(sender, "Thanks for your feedback.")
+            }
+        }
+        this.greet()
     }
 
     async verifyEmail(email, sender) {
