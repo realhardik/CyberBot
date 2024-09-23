@@ -16,7 +16,6 @@ const categories = require('./Questions/categories.json')[0]
         //         this.db = client.db(database);
         //         await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
         //         console.log('Connected to MongoDB successfully');
-        //         return true;
         //     } catch (err) {
         //         console.error('MongoDB connection error:', err);
         //         return false;
