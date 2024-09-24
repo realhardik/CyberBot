@@ -35,17 +35,24 @@
         "attachments": ""
     },
     {
-        "id": "behavior",
-        "q": "Have you noticed any unusual behavior or activity on your devices after the incident?",
-        "follow_up": "Can you describe the unusual behavior?",
-        "template": "Unusual behavior on user's devices after incident: ",
-        "attachments": ""
-    },
-    {
         "id": "reported",
         "q": "Have you reported this phishing attempt to any relevant authorities (e.g., your bank, the platform, etc)?",
         "follow_up": "Which authority or platform did you report it to?",
         "template": "Incident was reported to following authority(s): ",
+        "attachments": ""
+    },
+    {
+        "id": "proof",
+        "q": "Do you have any recordings, screenshots, or other evidence of the incident?",
+        "follow_up": "Please specify what you have as evidence of this incident.",
+        "template": "User has following proof: ",
+        "attachments": ""
+    },
+     {
+        "id": "other_imp_info",
+        "q": "Is there anything else you think is important to mention?",
+        "follow_up": "What is it?",
+        "template": "Other important information reported by user: ",
         "attachments": ""
     }
 ]
