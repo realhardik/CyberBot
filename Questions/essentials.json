@@ -7,7 +7,7 @@
     },
     {
         "id": "time",
-        "q": "When did the incident occur?\n\nProvide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\nex: 07/08/2024, 12:23 am or 08/12/2024 11 am",
+        "q": "When did the incident occur?\n\nProvide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\nex: 07/08/2024, 12:23 am or 08/12/2024, 11 am",
         "opt": [],
         "attachments": ""
       },

@@ -35,6 +35,24 @@ const categories = require('./Questions/categories.json')[0]
 //             result = await searchCollection[method](query)
 //         return result
 //     }
+        
+        // async addUser() {
+            // var schema = new mongoose.Schema({
+            //     userId: String,
+            //     name: String,
+            //     age: Number,
+            //     email: String,
+            //     contact: Number
+            // })
+            // var User = mongoose.model('User', userSchema)
+            // var newUser = new User({
+            //     name: data.name,
+            //     age: data.age,
+            //     email: data.email,
+            //     phone_no: data.contact
+            // });
+            // newUser.save().then(() => console.log("User created with auto-incremented id!"));
+        // }
 // }
 
 const h = {
@@ -350,7 +368,7 @@ class Flow {
     }
 
     async greet() {
-        let res = await this.bot.receiveMessage(null, "abv"),
+        let res = await this.bot.receiveMessage(null, "Manav"),
             reply;
         if ("hello" === res.body) {
 
@@ -481,7 +499,7 @@ class Flow {
                 response = h.validate("date", response)
                 console.log(response)
                 while (!response) {
-                    var msg = "Provide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\n ex: 07/08/2024, 12:23 am or 08/12/2024 11 am"
+                    var msg = "Provide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\n ex: 07/08/2024, 12:23 am or 08/12/2024, 11 am"
                     await this.bot.sendMessage(sender, msg)
                     response = await this.bot.receiveMessage()
                     console.log(response.body)
@@ -542,9 +560,10 @@ class Flow {
         await this.bot.sendMessage(sender, `${questions.length} questions will be provided. \nYou can skip any if already answered in description of event,\nbut providing as many answers as possible will help us offer the best\nsupport and assistance.`)
         for (var c = 0; c<questions.length; c++) {
             question = questions[c].q
-            var opt = ["Yes", "No", "Skip"]
-
-            question = h.options(question, opt) + `\n${questions.length-(c+1)} questions left.`
+            var opt = ["Yes", "No", "Skip"],
+                qNo = questions.length - (c+1),
+                qNoTemp = 1 === qNo ? "1 more question left" : 0 === qNo ? "Last question." : `\n${qNo} more questions left.`
+            question = h.options(question, opt) + "\n" + qNoTemp
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender)
@@ -604,16 +623,16 @@ class Flow {
             var attempts = 0,
                 tips = false
 
-            while (!tips && attempts < 8) {  // You can set a max attempts limit to avoid infinite loops
-                tips = await tipsPromise;  // Now wait for the promise to resolve if it hasn’t yet
+            while (!tips && attempts < 8) {  
+                tips = await tipsPromise;  
                 attempts++;
                 if (!tips) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before trying again
+                    await new Promise(resolve => setTimeout(resolve, 1000)); 
                 }
             }
 
             if (tips) {
-                await this.bot.sendMessage(sender, tips); // Handle the case where tips are available
+                await this.bot.sendMessage(sender, tips); 
             } else {
                 await this.bot.sendMessage(sender, "Sorry, we couldn't generate tips at the moment.");
             }
