@@ -232,7 +232,6 @@ class Services {
         for (var c = 0; c<placeholders.length; c++) {
             var placeholderValue = incident[placeholders[c]];
             start = start.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
-            end = end.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
         }
 
         for (var c = 0; c<keys.length; c++) {
@@ -244,7 +243,7 @@ class Services {
         this.prompt = start + template
     }
 
-    async getResponse(prompt) {
+    async getResponse() {
         let end = this.prompts["end"]["1"],
             rPrompt = this.prompt,
             prompt = rPrompt + end,
@@ -260,6 +259,7 @@ class Services {
                         return lRes
                     }
                     attempts++
+                    console.log(`attempt ${re} for response`)
                     prompt = rPrompt + this.prompts["end"][(re+"")]
                     res = await this.fetchAI(prompt)
                     lRes = (res.length > lRes.length) ? res : lRes
@@ -685,7 +685,6 @@ class Flow {
                 }
                 return true
             }
-
         } catch (error) {
             console.error('Error sending email:', error);
         }
