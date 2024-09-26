@@ -10,6 +10,7 @@
       "id": "hacker_contact",
       "q": "Did the attacker provide contact details or methods for further communication, such as email or a number or any other?",
       "follow_up": "What method of contact was provided?",
+      "opt": ["Email", "Phone Number", "Social Media", "Other"],
       "template": "Method of further communication provided by hacker: ",
       "attachments": ""
     },

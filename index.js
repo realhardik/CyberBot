@@ -192,8 +192,9 @@ class cyberBot {
     receiveMessage(t, s) {
         return new Promise((resolve) => {
             this.client.once('message', async (message) => {
-                if (message.isGroupMsg) 
+                if (message.from.includes('@g.us')) {
                     return
+                }
                 var user = s || null
     
                 // this.user = db.search({
@@ -519,7 +520,7 @@ class Flow {
                         await this.bot.sendMessage(sender, "Please provide entire amount ex. 2000, 10,000")
                         response = await this.bot.receiveMessage()
                         response = response.body
-                        format = /^\d+(,\d+)*$/g.test(response)
+                        format = /^\d+(,\d+)+$/g.test(response)
                     }
                     user.event["loss_amount"] = response
                     continue
