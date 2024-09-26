@@ -236,20 +236,19 @@ class Services {
     }
 
     async createPrompt(incident, questions) {
-        let start = this.prompts["intro"],
+        let user = this.prompts["user"],
             template = "",
             varChar = "$",
             placeholders = ["name", "age", "type", "date", "time", "device", "financial_loss", "desc", "actions"],
             keys = Object.keys(incident.related),
             questionsMap = {}
-        this.res = []
         questions.forEach(question => {
             questionsMap[question.id] = question;
         });
 
         for (var c = 0; c<placeholders.length; c++) {
             var placeholderValue = incident[placeholders[c]];
-            start = start.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
+            user = user.replaceAll(`${varChar}${placeholders[c]}`, placeholderValue || "undefined");
         }
 
         for (var c = 0; c<keys.length; c++) {
@@ -258,13 +257,14 @@ class Services {
             template += incident.related[keys[c]] || "undefined";
         }
 
-        this.prompt = start + template
+        this.prompt = user + template
     }
 
     async getResponse() {
-        let end = this.prompts["end"]["1"],
+        let start = this.prompts["intro"]["1"],
+            end = this.prompts["end"]["1"],
             rPrompt = this.prompt,
-            prompt = rPrompt + end,
+            prompt = start + rPrompt + end,
             res = await this.fetchAI(prompt),
             thres = res.slice(0, 70).toLowerCase()
             
@@ -278,7 +278,7 @@ class Services {
                     }
                     attempts++
                     console.log(`attempt ${re} for response`)
-                    prompt = rPrompt + this.prompts["end"][(re+"")]
+                    prompt = this.prompts["intro"]["2"] + rPrompt + this.prompts["end"][(re+"")]
                     res = await this.fetchAI(prompt)
                     lRes = (res.length > lRes.length) ? res : lRes
                     thres = res.slice(0, 70).toLowerCase()
@@ -619,15 +619,15 @@ class Flow {
                 await this.bot.sendMessage(sender, location)
             });
         } else {
-            await this.bot.sendMessage(sender, "Please wait while we generate tips tailored to your specific incident.");
+            await this.bot.sendMessage(sender, "Please wait while we generate structured response tailored to this incident.");
             var attempts = 0,
                 tips = false
 
             while (!tips && attempts < 8) {  
-                tips = await tipsPromise;  
+                tips = await tipsPromise;
                 attempts++;
                 if (!tips) {
-                    await new Promise(resolve => setTimeout(resolve, 1000)); 
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
 

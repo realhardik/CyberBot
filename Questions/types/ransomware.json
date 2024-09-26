@@ -7,13 +7,6 @@
       "attachments": ""
     },
     {
-      "id": "note",
-      "q": "Did the ransomware attackers leave a ransom note?",
-      "follow_up": "Was there any specific demand mentioned in the note?",
-      "template": "Demand mentioned by hacker: ",
-      "attachments": ""
-    },
-    {
       "id": "hacker_contact",
       "q": "Did the attacker provide contact details or methods for further communication, such as email or a number or any other?",
       "follow_up": "What method of contact was provided?",
@@ -25,13 +18,6 @@
       "q": "Was a specific payment method requested (e.g., cryptocurrency, bank transfer, personal meet)?",
       "follow_up": "What payment method was requested?",
       "template": "Payment method requested by hacker: ",
-      "attachments": ""
-    },
-    {
-      "id": "behavior",
-      "q": "Have you noticed any unusual behavior or activity on your devices after the incident?",
-      "follow_up": "Can you describe the unusual behavior?",
-      "template": "Unusual behavior noticed on device: ",
       "attachments": ""
     },
     {
