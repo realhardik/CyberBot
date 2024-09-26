@@ -8,22 +8,9 @@
     },
     {
       "id": "approach",
-      "q": "How were you approached with this fraudulent offer?",
+      "q": "How were you approached with this fraudulent offer? (e.g., Email, SMS, Phone call, Website, Social media)",
       "follow_up": "Which method was used (e.g., Email, SMS, Phone call, Website, Social media)?",
       "template": "Method used to approach: ",
-      "attachments": ""
-    },
-    {
-      "id": "offer",
-      "q": "What was promised in the offer (e.g., loans, products, investment returns)?",
-      "follow_up": "What was promised in the offer?",
-      "template": "Scam offer provided: ",
-      "attachments": ""
-    },
-    {
-      "id": "upfront",
-      "q": "Were you asked to make an upfront payment or deposit for fees, products, or processing?",
-      "follow_up": "",
       "attachments": ""
     },
     {

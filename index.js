@@ -262,18 +262,17 @@ class Services {
 
     async getResponse() {
         let start = this.prompts["intro"]["1"],
-            end = this.prompts["end"]["1"],
             rPrompt = this.prompt,
-            prompt = start + rPrompt + end,
+            prompt = start + rPrompt,
             res = await this.fetchAI(prompt),
             thres = res.slice(0, 70).toLowerCase()
             
             if (thres.includes("i can't") || thres.includes("i cannot")) {
                 let attempts = 0,
-                    re = 2,
+                    re = 0,
                     lRes = ""
                 while ((thres.includes("i can't") || thres.includes("i cannot")) && thres.length < 100) {
-                    if (attempts > 1 || re > 3) {
+                    if (attempts > 2 || re > 2) {
                         return lRes
                     }
                     attempts++
@@ -515,7 +514,7 @@ class Flow {
                     await this.bot.sendMessage(sender, questions[c].follow_up)
                     response = await this.bot.receiveMessage()
                     response = response.body
-                    var format = /^\d+(,\d+)*$/g.test(response)
+                    var format = /^[0-9]+$/g.test(response)
                     while (!format) {
                         await this.bot.sendMessage(sender, "Please provide entire amount ex. 2000, 10,000")
                         response = await this.bot.receiveMessage()

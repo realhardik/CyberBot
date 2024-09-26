@@ -1,7 +1,7 @@
 {
     "intro": {
         "1": "Hey LLama, I have created a cyberbot that gets the report of the cyber incidents happened to users of any age. So here you are supposed to respond with a set of \"potential\" steps that could be taken next and in case you can't provide any steps atleast try to tell which authority they should report this incident to, like Police station or bank or wherever, based on the incident. And along with this please also try to provide 4-5 tips tailored to user's age to avoid this kind of attacks in future. Thanks. Here's the info provided by user.:",
-        "2": "Hey LLama, I have created a chatbot that helps users of any age who have been in a cyber incident by providing them a set of potential steps that they can take next in case they have no idea. So you are supposed to respond with the steps that they could take next, and if not possible please tell which authority they should report this incident to, like Police Station or bank or wherever, based on the incident. And also try to provide 4-5 tips tailored to this incident to avoid this kind of attacks in future. Thanks. Here's the info provided by user: "
+        "2": "Here's the info provided by a user: "
     },
     "user": "\nName: $name  \nAge: $age. \nIncident occured on: \n Time: $time \nDevice: $device \nType of incident: $type \nFinancial loss: $financial_loss. \nHere is a short description of the event: $desc \nActions taken since incident: $actions",
     "end": {
