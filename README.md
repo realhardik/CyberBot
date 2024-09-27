@@ -68,20 +68,14 @@
    - Run the following command to clone the repository (replace `<repository-url>` with the actual URL of the Git repository):
 
      ```bash
-     git clone <repository-url>
-     ```
-
-   - For example:
-
-     ```bash
-     git clone https://github.com/yourusername/your-repository.git
+     git clone https://github.com/dev-hail/CyberBot.git
      ```
 
 3. **Navigate to the Project Directory:**
    - Change into the directory of the cloned repository:
 
      ```bash
-     cd your-repository
+     cd CyberBot
      ```
 
 4. **Install Project Dependencies:**
@@ -90,7 +84,7 @@
      ```bash
      npm install
      ```
-     
+
 5. **Start the Application:**
    - Run the following command to start the application:
 
