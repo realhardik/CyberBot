@@ -5,81 +5,8 @@ const { MongoClient } = require('mongodb');
 const path = require('path');
 const { type } = require('os');
 const { timeStamp } = require('console');
+const { send } = require('process');
 const categories = require('./Questions/categories.json')[0]
-
-const db = new class {
-    constructor() {
-        this.database = "whatweb",
-        this.url = "mongodb://localhost:27017"
-        this.client = new MongoClient(this.url, { useNewUrlParser: true, useUnifiedTopology: true })
-        h.bind(this, ["init", "addUser", "search"])
-        this.init()
-    }
-
-    async init() {
-        try {
-            await this.client.connect();
-            this.db = this.client.db(this.database);
-            var mUrl = this.url + `/${this.database}`
-            await mongoose.connect(mUrl, { useNewUrlParser: true, useUnifiedTopology: true });
-            console.log('Connected to MongoDB successfully');
-            const userSchema = new mongoose.Schema({
-                created_at: { type: Date, default: Date.now },
-                name: { type: String, required: true },
-                age: { type: Number, required: true },
-                gender: { type: String, required: true, enum: ["Male", "Female", "Other"]},
-                email: { type: String, required: true, unique: true },
-                contact: { type: String, required: true, unique: true },
-                premium_user: { type: Boolean, default: false }
-            });
-            this.userSchema = mongoose.model('userRef', userSchema);
-            
-        } catch (err) {
-            console.error('MongoDB connection error:', err);
-        }
-    }
-
-    async addUser(data) {
-       try {
-            const newUser = new this.userSchema(data);
-            await newUser.save();
-            console.log("User created successfully");
-            return newUser;
-        } catch(err) {
-            console.error("Error creating user: ", err.message);
-            return false; 
-        }
-    }
-
-    async search(query, collection, m) {
-        var method = ["find", "findOne"].includes(m) ? m : "find",
-            cursor = await this.db.collection(collection)[method](query),
-            result = "find" === m ? await cursor.toArray() : cursor
-        return result;
-    }
-
-    async addFeedback(contact, feedbackData) {
-        try {
-            const feedbackCollection = this.db.collection('feedback');
-            const feedback = { timestamp: new Date(), contact, ...feedbackData };
-            await feedbackCollection.insertOne(feedback);
-            console.log("Feedback added successfully");
-        } catch (err) {
-            console.error("Error adding feedback: ", err.message);
-        }
-    }
-
-    async addSession(contact, sessionData) {
-        try {
-            const sessionCollection = this.db.collection('sessions');
-            const session = { timestamp: new Date(), contact, ...sessionData };
-            await sessionCollection.insertOne(session);
-            console.log("Session added successfully");
-        } catch (err) {
-            console.error("Error adding session: ", err.message);
-        }
-    }
-}
 
 const h = {
     bind: (r, e) => {
@@ -95,21 +22,21 @@ const h = {
         return q
     },
     getOption: async (options, bot, sender, expected) => {
-        let res = await bot.receiveMessage()
+        let res = await bot.receiveMessage(sender)
         
         if (!expected) {
             res = await h.verify(options, res.body)
 
             while (!res) {
                 await bot.sendMessage(sender, "Please enter a valid numeric option.")
-                res = await bot.receiveMessage()
+                res = await bot.receiveMessage(sender)
                 res = await h.verify(options, res.body)
             }
         } else if (expected) {
             res = expected(res.body)?.trim()?.toLowerCase()
             while (res.length<2 || !res) {
                 await bot.sendMessage(sender, "Please enter a valid answer.")
-                res = await bot.receiveMessage()
+                res = await bot.receiveMessage(sender)
                 res = expected(res.body)
             }
         }
@@ -183,6 +110,176 @@ const h = {
     }
 }
 
+const db = new class {
+    constructor() {
+        this.database = "whatweb";
+        this.url = "mongodb://localhost:27017";
+        this.client = new MongoClient(this.url, { useNewUrlParser: true, useUnifiedTopology: true });
+        this.init();
+    }
+
+    async init() {
+        try {
+            await this.client.connect();
+            this.db = this.client.db(this.database);
+            const mUrl = this.url + `/${this.database}`;
+            await mongoose.connect(mUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+            this.createSchema();
+            console.log('Connected to MongoDB successfully');
+        } catch (err) {
+            console.error('MongoDB connection error:', err);
+        }
+    }
+
+    createSchema() {
+        // Define schemas
+        const userSchema = new mongoose.Schema({
+            created_at: { type: Date, default: Date.now },
+            name: { type: String, required: true },
+            age: { type: Number, required: true },
+            gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
+            email: { type: String, required: true, unique: true },
+            contact: { type: String, required: true, unique: true },
+            premium_user: { type: Boolean, default: false }
+        });
+
+        const feedbackSchema = new mongoose.Schema({
+            timestamp: { type: Date, default: Date.now },
+            contact: { type: String, required: true },
+            rating: { type: Number, required: true },
+            review: { type: String }
+        });
+
+        const sessionSchema = new mongoose.Schema({
+            sessionId: { type: Number, unique: true, required: true },
+            contact: { type: String, required: true },
+            startTimestamp: { type: Date, default: Date.now },
+            incidentType: { type: String, required: true },
+            status: { type: String, enum: ['Active', 'Completed'], default: 'Active' }
+        });
+
+        const counterSchema = new mongoose.Schema({
+            _id: { type: String, required: true },
+            sequence_value: { type: Number, default: 0 }
+        });
+
+        const historySchema = new mongoose.Schema({
+            timestamp: { type: Date, default: Date.now },
+            contact: { type: String, required: true },
+            sessionId: { type: Number, required: true }, // Ensure `sessionId` is required here
+            author: { type: String, enum: ['Chatbot', 'Client'], required: true },
+            message: { type: String, required: true }
+        });
+
+        // Create models
+        this.userRef = mongoose.model('userRef', userSchema);
+        this.feedback = mongoose.model('feedback', feedbackSchema);
+        this.sessions = mongoose.model('sessions', sessionSchema);
+        this.counter = mongoose.model('Counter', counterSchema);
+        this.history = mongoose.model('conversation_history', historySchema);
+    }
+
+    async addUser(data) {
+        try {
+            const newUser = new this.userRef(data);
+            await newUser.save();
+            console.log("User created successfully");
+            return newUser;
+        } catch (err) {
+            console.error("Error creating user: ", err.message);
+            return false;
+        }
+    }
+
+    async getNextSessionId() {
+        try {
+            const counter = await this.counter.findOneAndUpdate(
+                { _id: 'sessionId' },
+                { $inc: { sequence_value: 1 } },
+                { new: true, upsert: true }
+            );
+            return counter.sequence_value;
+        } catch (err) {
+            console.error("Error getting next session ID: ", err.message);
+            return false;
+        }
+    }
+
+    async search(query, collection, m) {
+        try {
+            const method = ["find", "findOne"].includes(m) ? m : "find";
+            let cursor;
+            if (method === "find") {
+                cursor = this.db.collection(collection)
+                    .find(query)
+                    .sort({ timestamp: -1 });
+            } else if (method === "findOne") {
+                cursor = this.db.collection(collection)
+                    .find(query)
+                    .sort({ timestamp: -1 }) 
+                    .limit(1); 
+            }
+            const result = method === "find" ? await cursor.toArray() : cursor;
+            return (method === "find" && result.length === 0) || (method === "findOne" && !result) ? false : result;
+        } catch (err) {
+            console.error("Error searching: ", err.message);
+            return false;
+        }
+    }
+
+    async addFeedback(contact, feedbackData) {
+        try {
+            const feedback = new this.feedback({
+                timestamp: new Date(),
+                contact: contact,
+                ...feedbackData
+            });
+            await feedback.save();
+            console.log("Feedback added successfully");
+        } catch (err) {
+            console.error("Error adding feedback: ", err.message);
+        }
+    }
+
+    async addSession(contact, sessionData) {
+        try {
+            const id = await this.getNextSessionId();
+            if (id === false) {
+                throw new Error("Failed to get next session ID");
+            }
+            const newSession = new this.sessions({
+                contact: contact,
+                sessionId: id,
+                ...sessionData
+            });
+            await newSession.save();
+            console.log("Session added successfully");
+        } catch (err) {
+            console.error("Error adding session: ", err.message);
+        }
+    }
+
+    async updateUser(contact, collection, updatedData) {
+        try {
+            const updatedUser = await this.db.collection(collection).findOneAndUpdate(
+                { contact: contact },
+                { $set: updatedData },
+                { new: true, runValidators: true }
+            );
+            if (!updatedUser.value) {
+                console.log("User not found.");
+                return false;
+            }
+            console.log("User updated successfully:", updatedUser.value);
+            return updatedUser.value;
+        } catch (err) {
+            console.error("Error updating user: ", err.message);
+            return false;
+        }
+    }
+}
+
+
 class cyberBot {
     constructor() {
         this.client = new Client()
@@ -203,37 +300,63 @@ class cyberBot {
 
             if (connected) {
                 console.log('Chatbot is live!')
+                this.init()
             }
         });
     }
     
     init() {
         this.client.on('message', async (message) => {
-            if (message.isGroupMsg) 
+            if (message.from.includes('@g.us')) {
                 return
+            }
 
+            var sender = message.from,
+                exists = await db.search({
+                    contact: sender
+                }, 'userRef', 'findOne')
+            console.log(exists)
+            
+            if (!exists) {
+                new Flow({
+                    sender: sender,
+                    user: exists,
+                    body: message.body.toLowerCase()
+                }, this)
+            } else {
+                const latestSession = await db.search(
+                    { contact: sender, status: 'Active' }, 
+                    'sessions', 
+                    'findOne'
+                );
+                if (latestSession) {
+                    console.log("Active session found:", latestSession);
+                    // If an active session is found, do nothing
+                    return;
+                }
+                new Flow({
+                    sender: sender,
+                    user: exists.name,
+                    body: message.body.toLowerCase()
+                }, this)
+            }
         })
     }
 
-    receiveMessage(t, s) {
+    receiveMessage(s) {
         return new Promise((resolve) => {
             this.client.once('message', async (message) => {
-                if (message.from.includes('@g.us')) {
+                if (message.from.includes('@g.us') || message.from !== s) {
+                    this.receiveMessage(s)
                     return
                 }
-                var user = s || null
-    
-                // this.user = db.search({
-                //     contact: sender
-                // }, 'user_ref', 'findOne')
-    
-                // this.storeMessages(sender, message)
+                
+                // this.storeMessages(message.from, message)
                 
                 resolve({
                     message: message,
                     sender: message.from,
-                    body: message.body.toLowerCase(),
-                    user: user || null
+                    body: message.body.toLowerCase()
                 })
             })
         })
@@ -293,7 +416,7 @@ class Services {
             prompt = start + rPrompt,
             res = await this.fetchAI(prompt),
             thres = res.slice(0, 70).toLowerCase()
-            
+            console.log(prompt)
             if (thres.includes("i can't") || thres.includes("i cannot")) {
                 let attempts = 0,
                     re = 0,
@@ -305,6 +428,7 @@ class Services {
                     attempts++
                     console.log(`attempt ${re} for response`)
                     prompt = this.prompts["intro"]["2"] + rPrompt + this.prompts["end"][(re+"")]
+                    console.log(prompt)
                     res = await this.fetchAI(prompt)
                     lRes = (res.length > lRes.length) ? res : lRes
                     thres = res.slice(0, 70).toLowerCase()
@@ -386,32 +510,35 @@ class Services {
 }
 
 class Flow {
-    constructor() {
-        this.bot = new cyberBot
+    constructor(s, bot) {
+        this.bot = bot
         this.services = new Services
         this.flow = ["greet", "categories", "essential", "related", "options"]
-        this.greet()
+        this.greet(s)
     }
 
-    async greet() {
-        let res = await this.bot.receiveMessage(null, "Manav"),
+    async greet(s) {
+        let res = s,
             reply;
+            console.log(res)
         if ("hello" === res.body) {
 
             if (res.user) {
-                reply = `Hello ${res.user}! How can I help you today?`
+                reply = `Hello ${res.name}! How can I help you today?`
                 await this.bot.sendMessage(res.sender, reply)
                 this.essentials(res.sender, !0)
-            } else if (null == res.user) {
+            } else if (!res.user) {
                 reply = `Hi, \nBefore we get started, we\'d like to gather a few details to better assist you.\nCould you please provide the following information?`
                 await this.bot.sendMessage(res.sender, reply)
+                db.addSession(res.sender, {
+                    incidentType: "Starters"
+                })
                 this.starters(res.sender)
             }
 
         } else {
             reply = "Type 'Hello' to start the conversation."
             await this.bot.sendMessage(res.sender, reply)
-            this.greet()
         }
     }
 
@@ -443,12 +570,11 @@ class Flow {
                 while (!format) {
                     if (attempts>3) {
                         await this.bot.sendMessage(sender, 'Failed to validate email.')
-                        this.greet()
                         return
                     }
                     var message = "Please provide valid email"
                     await this.bot.sendMessage(sender, message)
-                    response = await this.bot.receiveMessage()
+                    response = await this.bot.receiveMessage(sender)
                     email = response.body.toLowerCase()
                     format = h.validate("email", email)
                     attempts++
@@ -468,7 +594,6 @@ class Flow {
                     this.essentials(user)
                     return
                 } else {
-                    this.greet()
                     return
                 }
             } else if (question.includes("age")) {
@@ -477,12 +602,10 @@ class Flow {
                 while (response > 99 || response < 15 || isNaN(response)) {
                     if (!isNaN(response)) {
                         if (attempts > 3) {
-                            this.greet()
                             return false
                         }
                         if (response<15) {
                             await this.bot.sendMessage(sender, "Only 15+ age users are allowed to use this chatbot.")
-                            this.greet()
                             return
                         } else if (response>99) {
                             await this.bot.sendMessage(sender, "Please provide a valid age.")
@@ -491,7 +614,7 @@ class Flow {
                         await this.bot.sendMessage(sender, "Please provide a numeric age.")
                     }
 
-                    response = await this.bot.receiveMessage()
+                    response = await this.bot.receiveMessage(sender)
                     response = Number(response.body)
                     attempts++
                 }
@@ -531,7 +654,7 @@ class Flow {
                 while (!response) {
                     var msg = "Provide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\n ex: 07/08/2024, 12:23 am or 08/12/2024, 11 am"
                     await this.bot.sendMessage(sender, msg)
-                    response = await this.bot.receiveMessage()
+                    response = await this.bot.receiveMessage(sender)
                     console.log(response.body)
                     response = h.validate("date", response.body)
                 }
@@ -543,14 +666,14 @@ class Flow {
                 user.event[questions[c].id] = response
                 if ("yes" === response) {
                     await this.bot.sendMessage(sender, questions[c].follow_up)
-                    response = await this.bot.receiveMessage()
+                    response = await this.bot.receiveMessage(sender)
                     response = response.body
                     var format = /^[0-9]+$/g.test(response)
                     while (!format) {
-                        await this.bot.sendMessage(sender, "Please provide entire amount ex. 2000, 10,000")
-                        response = await this.bot.receiveMessage()
+                        await this.bot.sendMessage(sender, "Please provide entire amount ex. 2000, 10000")
+                        response = await this.bot.receiveMessage(sender)
                         response = response.body
-                        format = /^\d+(,\d+)+$/g.test(response)
+                        format = /^\d+$/g.test(response)
                     }
                     user.event["loss_amount"] = response
                     continue
@@ -573,7 +696,6 @@ class Flow {
                 this.categories(user_data)
                 return
             }
-            this.greet()
             return
         }
         this.categories(user_data)
@@ -627,18 +749,17 @@ class Flow {
         if (response.toLowerCase() == "location") {
             var msg = "Please provide your location using Whatsapp's location sharing"
             await this.bot.sendMessage(sender, msg)
-            response = await this.bot.receiveMessage()
+            response = await this.bot.receiveMessage(sender)
             var attempts = 0
 
             while (!response.message.location) {
                 if (attempts > 3) {
                     await this.bot.sendMessage(sender, "Exiting. Please try again later.")
-                    this.greet()
                     return
                 }
                 var repeat = "Invalid message. Provide your location using Whatsapp's location sharing option."
                 await this.bot.sendMessage(sender, repeat)
-                response = await this.bot.receiveMessage()
+                response = await this.bot.receiveMessage(sender)
                 attempts++
             }
             var data = await this.services.getPoliceStation({
@@ -647,7 +768,7 @@ class Flow {
                 })
             if (0 === data.length) {
                 await this.bot.sendMessage(sender, "Sorry. Can't find any nearby Police Stations.")
-                return (this.greet(), false)
+                return false
             }
             data.forEach(async (loc, i) => {
                 var location = new Location(loc.lat, loc.lon)
@@ -692,12 +813,11 @@ class Flow {
             response = await h.getOption(["yes", "no"], this.bot, sender)
             if ("yes" === response) {
                 await this.bot.sendMessage(sender, "You can provide your feedback now.")
-                response = await this.bot.receiveMessage()
+                response = await this.bot.receiveMessage(sender)
                 response = response.body
                 await this.bot.sendMessage(sender, "Thanks for your feedback.")
             }
         }
-        this.greet()
     }
 
     async verifyEmail(email, sender) {
@@ -724,7 +844,7 @@ class Flow {
         try {
             let info = await transporter.sendMail(mailOptions);
             await this.bot.sendMessage(sender, "OTP sent on given Email address.\nPlease Enter to proceed.")
-            let res = await this.bot.receiveMessage()
+            let res = await this.bot.receiveMessage(sender)
             if (res.body == otp) {
                 await this.bot.sendMessage(sender, "Email verified successfully.")
                 return true
@@ -735,7 +855,7 @@ class Flow {
                         return false
                     }
                     await this.bot.sendMessage(sender, "Invalid OTP. Please Try again.")
-                    res = await this.bot.receiveMessage()
+                    res = await this.bot.receiveMessage(sender)
                     res = res.body
                 }
                 return true
@@ -748,7 +868,6 @@ class Flow {
 
 new class {
     constructor() {
-        new Flow
-        // new Services
+        new cyberBot
     }
 }
