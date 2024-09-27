@@ -1,59 +1,85 @@
 const { Client, Location } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-// const mongoose = require('mongoose');
-// const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
+const { MongoClient } = require('mongodb');
 const path = require('path');
+const { type } = require('os');
+const { timeStamp } = require('console');
 const categories = require('./Questions/categories.json')[0]
 
-// const db = new class {
-//     constructor() {
-        // let database = "whatweb",
-        //     url = "mongodb://localhost:27017",
-        //     mUrl = url + `/${database}`,
-        //     client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-        //     try {
-        //         await client.connect();
-        //         this.db = client.db(database);
-        //         await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
-        //         console.log('Connected to MongoDB successfully');
-        //     } catch (err) {
-        //         console.error('MongoDB connection error:', err);
-        //         return false;
-        //     }
-//     }
+const db = new class {
+    constructor() {
+        this.database = "whatweb",
+        this.url = "mongodb://localhost:27017"
+        this.client = new MongoClient(this.url, { useNewUrlParser: true, useUnifiedTopology: true })
+        h.bind(this, ["init", "addUser", "search"])
+        this.init()
+    }
 
-//     async search(query, collection, m) {
-//         var schema = new mongoose.Schema({
-//                 userId: String,
-//                 name: String,
-//                 age: Number,
-//                 email: String,
-//                 contact: Number
-//             }),
-//             searchCollection = mongoose.model(collection, schema),
-//             method = m in ["find", "findOne", "findById"] ? m : "find",
-//             result = await searchCollection[method](query)
-//         return result
-//     }
-        
-        // async addUser() {
-            // var schema = new mongoose.Schema({
-            //     userId: String,
-            //     name: String,
-            //     age: Number,
-            //     email: String,
-            //     contact: Number
-            // })
-            // var User = mongoose.model('User', userSchema)
-            // var newUser = new User({
-            //     name: data.name,
-            //     age: data.age,
-            //     email: data.email,
-            //     phone_no: data.contact
-            // });
-            // newUser.save().then(() => console.log("User created with auto-incremented id!"));
-        // }
-// }
+    async init() {
+        try {
+            await this.client.connect();
+            this.db = this.client.db(this.database);
+            var mUrl = this.url + `/${this.database}`
+            await mongoose.connect(mUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+            console.log('Connected to MongoDB successfully');
+            const userSchema = new mongoose.Schema({
+                created_at: { type: Date, default: Date.now },
+                name: { type: String, required: true },
+                age: { type: Number, required: true },
+                gender: { type: String, required: true, enum: ["Male", "Female", "Other"]},
+                email: { type: String, required: true, unique: true },
+                contact: { type: String, required: true, unique: true },
+                premium_user: { type: Boolean, default: false }
+            });
+            this.userSchema = mongoose.model('userRef', userSchema);
+            
+        } catch (err) {
+            console.error('MongoDB connection error:', err);
+        }
+    }
+
+    async addUser(data) {
+       try {
+            const newUser = new this.userSchema(data);
+            await newUser.save();
+            console.log("User created successfully");
+            return newUser;
+        } catch(err) {
+            console.error("Error creating user: ", err.message);
+            return false; 
+        }
+    }
+
+    async search(query, collection, m) {
+        var method = ["find", "findOne"].includes(m) ? m : "find",
+            cursor = await this.db.collection(collection)[method](query),
+            result = "find" === m ? await cursor.toArray() : cursor
+        return result;
+    }
+
+    async addFeedback(contact, feedbackData) {
+        try {
+            const feedbackCollection = this.db.collection('feedback');
+            const feedback = { timestamp: new Date(), contact, ...feedbackData };
+            await feedbackCollection.insertOne(feedback);
+            console.log("Feedback added successfully");
+        } catch (err) {
+            console.error("Error adding feedback: ", err.message);
+        }
+    }
+
+    async addSession(contact, sessionData) {
+        try {
+            const sessionCollection = this.db.collection('sessions');
+            const session = { timestamp: new Date(), contact, ...sessionData };
+            await sessionCollection.insertOne(session);
+            console.log("Session added successfully");
+        } catch (err) {
+            console.error("Error adding session: ", err.message);
+        }
+    }
+}
 
 const h = {
     bind: (r, e) => {
@@ -84,7 +110,7 @@ const h = {
             while (res.length<2 || !res) {
                 await bot.sendMessage(sender, "Please enter a valid answer.")
                 res = await bot.receiveMessage()
-                res = expected(res.body).toLowerCase()
+                res = expected(res.body)
             }
         }
         return res
@@ -409,8 +435,6 @@ class Flow {
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender, (oflag ? null : String))
-            console.log(question)
-            console.log(question.includes("date"))
             if (question.includes("E-mail")) {
                 var email = response.toLowerCase(),
                     format = h.validate("email", email),
@@ -433,7 +457,13 @@ class Flow {
                 let verification = await this.verifyEmail(email, sender)
                 if (verification) {
                     user[questions[c].id] = email
-                    // db.createUser(user)
+                    db.addUser({
+                        name: user.name,
+                        age: user.age,
+                        email: user.email,
+                        contact: user.id,
+                        premium_user: false
+                    })
                     await this.bot.sendMessage(sender, "Now, we will ask questions related to the cyberthreat.")
                     this.essentials(user)
                     return
@@ -554,15 +584,17 @@ class Flow {
             questions = require(qPath),
             question,
             response,
+            opt,
             sender = user_data.id
             user_data.event.related = {}
 
         await this.bot.sendMessage(sender, `${questions.length} questions will be provided. \nYou can skip any if already answered in description of event,\nbut providing as many answers as possible will help us offer the best\nsupport and assistance.`)
         for (var c = 0; c<questions.length; c++) {
             question = questions[c].q
-            var opt = ["Yes", "No", "Skip"],
-                qNo = questions.length - (c+1),
+            
+            var qNo = questions.length - (c+1),
                 qNoTemp = 1 === qNo ? "1 more question left" : 0 === qNo ? "Last question." : `\n${qNo} more questions left.`
+                opt = ["Yes", "No", "Skip"]
             question = h.options(question, opt) + "\n" + qNoTemp
 
             await this.bot.sendMessage(sender, question)
@@ -572,8 +604,12 @@ class Flow {
                 continue
             } else if (response.toLowerCase() === "yes") {
                 question = questions[c]["follow_up"]
+                opt = questions[c]?.opt
+                if (opt && opt.length > 0) {
+                    question = h.options(question, questions[c].opt)
+                }
                 await this.bot.sendMessage(sender, question)
-                response = await h.getOption(null, this.bot, sender, String)
+                response = await h.getOption(opt, this.bot, sender, (opt ? null : String))
             }
             
             user_data.event.related[questions[c].id] = response

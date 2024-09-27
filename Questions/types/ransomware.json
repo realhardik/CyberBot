@@ -16,8 +16,9 @@
     },
     {
       "id": "payment_method",
-      "q": "Was a specific payment method requested (e.g., cryptocurrency, bank transfer, personal meet)?",
+      "q": "Was a specific payment method requested (e.g., cryptocurrency, bank transfer, cash drop)?",
       "follow_up": "What payment method was requested?",
+      "opt": ["Bank Transfer", "UPI ID", "Cryptocurrency", "Cash Drop", "Other"],
       "template": "Payment method requested by hacker: ",
       "attachments": ""
     },
