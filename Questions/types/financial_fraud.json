@@ -10,14 +10,15 @@
       "id": "approach",
       "q": "How were you approached with this fraudulent offer? (e.g., Email, SMS, Phone call, Website, Social media)",
       "follow_up": "Which method was used (e.g., Email, SMS, Phone call, Website, Social media)?",
+      "opt": ["Email", "Call", "Social Media", "Website", "Other"],
       "template": "Method used to approach: ",
       "attachments": ""
     },
     {
       "id": "payment",
       "q": "Did you make any payments or provide personal/financial details?",
-      "follow_up": "What specific details were provided?",
-      "template": "Personal/financial details that were provided to hacker: ",
+      "follow_up": "What did you do?",
+      "template": "Personal/financial details or any payments that were provided/made to hacker: ",
       "attachments": ""
     },
     {
