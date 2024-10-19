@@ -184,7 +184,7 @@ const db = new class {
             console.log("User created successfully");
             return newUser;
         } catch (err) {
-            console.error("Error creating user: ", err.message);
+            console.error("Error creating user: ", err);
             return false;
         }
     }
@@ -198,29 +198,32 @@ const db = new class {
             );
             return counter.sequence_value;
         } catch (err) {
-            console.error("Error getting next session ID: ", err.message);
+            console.error("Error getting next session ID: ", err);
             return false;
         }
     }
 
     async search(query, collection, m) {
         try {
-            const method = ["find", "findOne"].includes(m) ? m : "find";
-            let cursor;
+            const method = m ? ["find", "findOne"].includes(m) ? m : "find" : "find";
+            let result;
             if (method === "find") {
-                cursor = this.db.collection(collection)
+                var cursor = this.db.collection(collection)
                     .find(query)
                     .sort({ timestamp: -1 });
+                result = await cursor.toArray();
             } else if (method === "findOne") {
-                cursor = this.db.collection(collection)
-                    .find(query)
-                    .sort({ timestamp: -1 }) 
-                    .limit(1); 
+                result = this.db.collection(collection)
+                    .findOne(query, { sort: { timestamp: -1 } });
             }
-            const result = method === "find" ? await cursor.toArray() : cursor;
-            return (method === "find" && result.length === 0) || (method === "findOne" && !result) ? false : result;
+            // result = method === "find" ? await cursor.toArray() : cursor;
+            if ((method === "find" && result.length === 0) || (method === "findOne" && !result)) {
+                return false;
+            }
+            return result
+            // return ((method === "find" && result.length === 0) || (method === "findOne" && !result) ? false : result);
         } catch (err) {
-            console.error("Error searching: ", err.message);
+            console.error("Error searching: ", err);
             return false;
         }
     }
@@ -315,7 +318,7 @@ class cyberBot {
 
             if (connected) {
                 console.log('Chatbot is live!')
-                // this.init()
+                this.init()
             }
         });
     }
@@ -361,7 +364,7 @@ class cyberBot {
     receiveMessage(s) {
         return new Promise((resolve) => {
             this.client.once('message', async (message) => {
-                if (message.from.includes('@g.us')) {
+                if (message.from.includes('@g.us') || message.from !== s) {
                     this.receiveMessage(s)
                     return
                 }
@@ -391,7 +394,12 @@ class cyberBot {
     }
 
     storeMessages(contact, author, msg) {
-        db.addConversation(contact, author, msg)
+        try {
+            db.addConversation(contact, author, msg)
+        } catch (err) {
+            console.error('Error storing the message. \nError: ', err)
+        }
+        
     }
 }
 
@@ -527,17 +535,19 @@ class Services {
 
 class Flow {
     constructor(s, bot) {
-        this.bot = new cyberBot
+        // this.bot = new cyberBot
+        this.bot = bot
         this.services = new Services
         this.flow = ["greet", "categories", "essential", "related", "options"]
-        this.greet()
+        this.greet(s)
     }
 
-    async greet() {
-        let res = await this.bot.receiveMessage(),
-            reply;
+    async greet(m) {
+        // let res = await this.bot.receiveMessage(),
+        //     reply;
+        let res = m,
+        reply;
         if ("hello" === res.body) {
-
             if (res.user) {
                 reply = `Hello ${res.name}! How can I help you today?`
                 await this.bot.sendMessage(res.sender, reply)
@@ -554,7 +564,12 @@ class Flow {
         } else {
             reply = "Type 'Hello' to start the conversation."
             await this.bot.sendMessage(res.sender, reply)
-            this.greet()
+            res = await this.bot.receiveMessage(res.sender)
+            this.greet({
+                sender: res.sender,
+                user: res.user,
+                body: res
+            })
         }
     }
 
@@ -610,7 +625,7 @@ class Flow {
                     this.essentials(user)
                     return
                 } else {
-                    this.greet()
+                    // this.greet()
                     return
                 }
             } else if (question.includes("age")) {
@@ -832,7 +847,7 @@ class Flow {
                 response = response.body
                 await this.bot.sendMessage(sender, "Thanks for your feedback.")
             }
-            this.greet()
+            // this.greet()
         }
     }
 
@@ -884,6 +899,7 @@ class Flow {
 
 new class {
     constructor() {
-        new Flow
+        // new Flow
+        new cyberBot
     }
 }
