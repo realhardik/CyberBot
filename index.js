@@ -110,174 +110,189 @@ const h = {
     }
 }
 
-// const db = new class {
-//     constructor() {
-//         this.database = "whatweb";
-//         this.url = "mongodb://localhost:27017";
-//         this.client = new MongoClient(this.url, { useNewUrlParser: true, useUnifiedTopology: true });
-//         this.init();
-//     }
+const db = new class {
+    constructor() {
+        this.database = "whatweb";
+        this.url = "mongodb://localhost:27017";
+        this.client = new MongoClient(this.url);
+        this.init();
+    }
 
-//     async init() {
-//         try {
-//             await this.client.connect();
-//             this.db = this.client.db(this.database);
-//             const mUrl = this.url + `/${this.database}`;
-//             await mongoose.connect(mUrl, { useNewUrlParser: true, useUnifiedTopology: true });
-//             this.createSchema();
-//             console.log('Connected to MongoDB successfully');
-//         } catch (err) {
-//             console.error('MongoDB connection error:', err);
-//         }
-//     }
+    async init() {
+        try {
+            await this.client.connect();
+            this.db = this.client.db(this.database);
+            const mUrl = this.url + `/${this.database}`;
+            await mongoose.connect(mUrl);
+            this.createSchema();
+            console.log('Connected to MongoDB successfully');
+        } catch (err) {
+            console.error('MongoDB connection error:', err);
+        }
+    }
 
-//     createSchema() {
-//         // Define schemas
-//         const userSchema = new mongoose.Schema({
-//             created_at: { type: Date, default: Date.now },
-//             name: { type: String, required: true },
-//             age: { type: Number, required: true },
-//             gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
-//             email: { type: String, required: true, unique: true },
-//             contact: { type: String, required: true, unique: true },
-//             premium_user: { type: Boolean, default: false }
-//         });
+    createSchema() {
+        const userSchema = new mongoose.Schema({
+            created_at: { type: Date, default: Date.now },
+            name: { type: String, required: true },
+            age: { type: Number, required: true },
+            gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
+            email: { type: String, required: true, unique: true },
+            contact: { type: String, required: true, unique: true },
+            premium_user: { type: Boolean, default: false }
+        });
 
-//         const feedbackSchema = new mongoose.Schema({
-//             timestamp: { type: Date, default: Date.now },
-//             contact: { type: String, required: true },
-//             rating: { type: Number, required: true },
-//             review: { type: String }
-//         });
+        const feedbackSchema = new mongoose.Schema({
+            timestamp: { type: Date, default: Date.now },
+            contact: { type: String, required: true },
+            rating: { type: Number, required: true },
+            review: { type: String }
+        });
 
-//         const sessionSchema = new mongoose.Schema({
-//             sessionId: { type: Number, unique: true, required: true },
-//             contact: { type: String, required: true },
-//             startTimestamp: { type: Date, default: Date.now },
-//             incidentType: { type: String, required: true },
-//             status: { type: String, enum: ['Active', 'Completed'], default: 'Active' }
-//         });
+        const sessionSchema = new mongoose.Schema({
+            sessionId: { type: Number, unique: true, required: true },
+            contact: { type: String, required: true },
+            startTimestamp: { type: Date, default: Date.now },
+            incidentType: { type: String, required: true },
+            status: { type: String, enum: ['Active', 'Completed'], default: 'Active' }
+        });
 
-//         const counterSchema = new mongoose.Schema({
-//             _id: { type: String, required: true },
-//             sequence_value: { type: Number, default: 0 }
-//         });
+        const counterSchema = new mongoose.Schema({
+            _id: { type: String, required: true },
+            sequence_value: { type: Number, default: 0 }
+        });
 
-//         const historySchema = new mongoose.Schema({
-//             timestamp: { type: Date, default: Date.now },
-//             contact: { type: String, required: true },
-//             sessionId: { type: Number, required: true }, // Ensure `sessionId` is required here
-//             author: { type: String, enum: ['Chatbot', 'Client'], required: true },
-//             message: { type: String, required: true }
-//         });
+        const historySchema = new mongoose.Schema({
+            timestamp: { type: Date, default: Date.now },
+            contact: { type: String, required: true },
+            sessionId: { type: Number, required: true },
+            author: { type: String, enum: ['Chatbot', 'Client'], required: true },
+            message: { type: String, required: true }
+        });
 
-//         // Create models
-//         this.userRef = mongoose.model('userRef', userSchema);
-//         this.feedback = mongoose.model('feedback', feedbackSchema);
-//         this.sessions = mongoose.model('sessions', sessionSchema);
-//         this.counter = mongoose.model('Counter', counterSchema);
-//         this.history = mongoose.model('conversation_history', historySchema);
-//     }
+        this.userRef = mongoose.model('userRef', userSchema);
+        this.feedback = mongoose.model('feedback', feedbackSchema);
+        this.sessions = mongoose.model('sessions', sessionSchema);
+        this.counter = mongoose.model('Counter', counterSchema);
+        this.history = mongoose.model('conversation_history', historySchema);
+    }
 
-//     async addUser(data) {
-//         try {
-//             const newUser = new this.userRef(data);
-//             await newUser.save();
-//             console.log("User created successfully");
-//             return newUser;
-//         } catch (err) {
-//             console.error("Error creating user: ", err.message);
-//             return false;
-//         }
-//     }
+    async addUser(data) {
+        try {
+            const newUser = new this.userRef(data);
+            await newUser.save();
+            console.log("User created successfully");
+            return newUser;
+        } catch (err) {
+            console.error("Error creating user: ", err.message);
+            return false;
+        }
+    }
 
-//     async getNextSessionId() {
-//         try {
-//             const counter = await this.counter.findOneAndUpdate(
-//                 { _id: 'sessionId' },
-//                 { $inc: { sequence_value: 1 } },
-//                 { new: true, upsert: true }
-//             );
-//             return counter.sequence_value;
-//         } catch (err) {
-//             console.error("Error getting next session ID: ", err.message);
-//             return false;
-//         }
-//     }
+    async getNextSessionId() {
+        try {
+            const counter = await this.counter.findOneAndUpdate(
+                { _id: 'sessionId' },
+                { $inc: { sequence_value: 1 } },
+                { new: true, upsert: true }
+            );
+            return counter.sequence_value;
+        } catch (err) {
+            console.error("Error getting next session ID: ", err.message);
+            return false;
+        }
+    }
 
-//     async search(query, collection, m) {
-//         try {
-//             const method = ["find", "findOne"].includes(m) ? m : "find";
-//             let cursor;
-//             if (method === "find") {
-//                 cursor = this.db.collection(collection)
-//                     .find(query)
-//                     .sort({ timestamp: -1 });
-//             } else if (method === "findOne") {
-//                 cursor = this.db.collection(collection)
-//                     .find(query)
-//                     .sort({ timestamp: -1 }) 
-//                     .limit(1); 
-//             }
-//             const result = method === "find" ? await cursor.toArray() : cursor;
-//             return (method === "find" && result.length === 0) || (method === "findOne" && !result) ? false : result;
-//         } catch (err) {
-//             console.error("Error searching: ", err.message);
-//             return false;
-//         }
-//     }
+    async search(query, collection, m) {
+        try {
+            const method = ["find", "findOne"].includes(m) ? m : "find";
+            let cursor;
+            if (method === "find") {
+                cursor = this.db.collection(collection)
+                    .find(query)
+                    .sort({ timestamp: -1 });
+            } else if (method === "findOne") {
+                cursor = this.db.collection(collection)
+                    .find(query)
+                    .sort({ timestamp: -1 }) 
+                    .limit(1); 
+            }
+            const result = method === "find" ? await cursor.toArray() : cursor;
+            return (method === "find" && result.length === 0) || (method === "findOne" && !result) ? false : result;
+        } catch (err) {
+            console.error("Error searching: ", err.message);
+            return false;
+        }
+    }
 
-//     async addFeedback(contact, feedbackData) {
-//         try {
-//             const feedback = new this.feedback({
-//                 timestamp: new Date(),
-//                 contact: contact,
-//                 ...feedbackData
-//             });
-//             await feedback.save();
-//             console.log("Feedback added successfully");
-//         } catch (err) {
-//             console.error("Error adding feedback: ", err.message);
-//         }
-//     }
+    async addFeedback(contact, feedbackData) {
+        try {
+            const feedback = new this.feedback({
+                timestamp: new Date(),
+                contact: contact,
+                ...feedbackData
+            });
+            await feedback.save();
+            console.log("Feedback added successfully");
+        } catch (err) {
+            console.error("Error adding feedback: ", err.message);
+        }
+    }
 
-//     async addSession(contact, sessionData) {
-//         try {
-//             const id = await this.getNextSessionId();
-//             if (id === false) {
-//                 throw new Error("Failed to get next session ID");
-//             }
-//             const newSession = new this.sessions({
-//                 contact: contact,
-//                 sessionId: id,
-//                 ...sessionData
-//             });
-//             await newSession.save();
-//             console.log("Session added successfully");
-//         } catch (err) {
-//             console.error("Error adding session: ", err.message);
-//         }
-//     }
+    async addSession(contact, sessionData) {
+        try {
+            const id = await this.getNextSessionId();
+            if (id === false) {
+                throw new Error("Failed to get next session ID");
+            }
+            const newSession = new this.sessions({
+                contact: contact,
+                sessionId: id,
+                ...sessionData
+            });
+            await newSession.save();
+            console.log("Session added successfully");
+        } catch (err) {
+            console.error("Error adding session: ", err.message);
+        }
+    }
 
-//     async updateUser(contact, collection, updatedData) {
-//         try {
-//             const updatedUser = await this.db.collection(collection).findOneAndUpdate(
-//                 { contact: contact },
-//                 { $set: updatedData },
-//                 { new: true, runValidators: true }
-//             );
-//             if (!updatedUser.value) {
-//                 console.log("User not found.");
-//                 return false;
-//             }
-//             console.log("User updated successfully:", updatedUser.value);
-//             return updatedUser.value;
-//         } catch (err) {
-//             console.error("Error updating user: ", err.message);
-//             return false;
-//         }
-//     }
-// }
+    async updateUser(contact, collection, updatedData) {
+        try {
+            const updatedUser = await this.db.collection(collection).findOneAndUpdate(
+                { contact: contact },
+                { $set: updatedData },
+                { new: true, runValidators: true }
+            );
+            if (!updatedUser.value) {
+                console.log("User not found.");
+                return false;
+            }
+            console.log("User updated successfully:", updatedUser.value);
+            return updatedUser.value;
+        } catch (err) {
+            console.error("Error updating user: ", err.message);
+            return false;
+        }
+    }
+
+    async addConversation(contact, author, conversation) {
+        try {
+
+            const msg = new this.history({
+                contact: contact,
+                sessionId: 1,
+                author: author,
+                message: conversation
+            })
+            await msg.save();
+            console.log("Message saved");
+        } catch (err) {
+            console.error("Error updating user: ", err.message);
+            return false;
+        }
+    }
+}
 
 
 class cyberBot {
@@ -351,7 +366,7 @@ class cyberBot {
                     return
                 }
                 
-                // this.storeMessages(message.from, message)
+                this.storeMessages(message.from, "Client", message.body.toLowerCase())
                 
                 resolve({
                     message: message,
@@ -367,7 +382,7 @@ class cyberBot {
 
     async sendMessage(sender, message) {
         try {
-            // this.storeMessages('chatbot', message)
+            this.storeMessages(sender, 'Chatbot', message)
             await this.client.sendMessage(sender, message);
             
         } catch (err) {
@@ -375,8 +390,8 @@ class cyberBot {
         }
     }
 
-    storeMessages(msg) {
-
+    storeMessages(contact, author, msg) {
+        db.addConversation(contact, author, msg)
     }
 }
 
@@ -418,7 +433,6 @@ class Services {
             prompt = start + rPrompt + this.prompts.end["1"],
             res = await this.fetchAI(prompt),
             thres = res.slice(0, 70).toLowerCase()
-            console.log(prompt)
             if (thres.includes("i can't") || thres.includes("i cannot")) {
                 let attempts = 0,
                     re = 2,
@@ -522,7 +536,6 @@ class Flow {
     async greet() {
         let res = await this.bot.receiveMessage(),
             reply;
-            console.log(res)
         if ("hello" === res.body) {
 
             if (res.user) {
@@ -654,12 +667,10 @@ class Flow {
 
             if (question.includes("date")) {
                 response = h.validate("date", response)
-                console.log(response)
                 while (!response) {
                     var msg = "Provide date & time in foll. format: DD/MM/YYYY, HH:MM (AM/PM)\n ex: 07/08/2024, 12:23 am or 08/12/2024, 11 am"
                     await this.bot.sendMessage(sender, msg)
                     response = await this.bot.receiveMessage(sender)
-                    console.log(response.body)
                     response = h.validate("date", response.body)
                 }
                 user.event["date"] = response.date
@@ -726,7 +737,6 @@ class Flow {
 
             await this.bot.sendMessage(sender, question)
             response = await h.getOption(opt, this.bot, sender)
-            console.log(response)
             if (response.toLowerCase() === "skip") {
                 continue
             } else if (response.toLowerCase() === "yes") {
