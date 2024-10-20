@@ -134,13 +134,14 @@ const db = new class {
     createSchema() {
         const userSchema = new mongoose.Schema({
             created_at: { type: Date, default: Date.now },
-            name: { type: String, required: true },
-            age: { type: Number, required: true },
-            gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
-            email: { type: String, required: true, unique: true },
+            name: { type: String, default: "User" },
+            age: { type: Number },
+            gender: { type: String, enum: ["Male", "Female", "Other"] },
+            email: { type: String, unique: true },
             contact: { type: String, required: true, unique: true },
-            premium_user: { type: Boolean, default: false }
-        });
+            premium_user: { type: Boolean, default: false },
+            verified: { type: String, default: "No", enum: ["Yes", "No", "Pending"]}
+        }, { collection: 'userRef' });
 
         const feedbackSchema = new mongoose.Schema({
             timestamp: { type: Date, default: Date.now },
@@ -265,7 +266,7 @@ const db = new class {
             const updatedUser = await this.db.collection(collection).findOneAndUpdate(
                 { contact: contact },
                 { $set: updatedData },
-                { new: true, runValidators: true }
+                { returnDocument: "after" }
             );
             if (!updatedUser.value) {
                 console.log("User not found.");
@@ -333,9 +334,16 @@ class cyberBot {
                 exists = await db.search({
                     contact: sender
                 }, 'userRef', 'findOne')
-            console.log(exists)
+
+            if (exists && (exists.verified === "Pending")) {
+                return
+            }
             
             if (!exists) {
+                db.addUser({
+                    contact: sender,
+                    verified: "Pending"
+                })
                 new Flow({
                     sender: sender,
                     user: exists,
@@ -348,7 +356,7 @@ class cyberBot {
                     'findOne'
                 );
                 if (latestSession) {
-                    console.log("Active session found:", latestSession);
+                    console.log("Active session found: ", latestSession);
                     // If an active session is found, do nothing
                     return;
                 }
@@ -614,13 +622,12 @@ class Flow {
                 let verification = await this.verifyEmail(email, sender)
                 if (verification) {
                     user[questions[c].id] = email
-                    // db.addUser({
-                    //     name: user.name,
-                    //     age: user.age,
-                    //     email: user.email,
-                    //     contact: user.id,
-                    //     premium_user: false
-                    // })
+                    db.updateUser(sender, "userRef", {
+                        name: user.name,
+                        age: user.age,
+                        email: user.email,
+                        premium_user: false
+                    })
                     await this.bot.sendMessage(sender, "Now, we will ask questions related to the cyberthreat.")
                     this.essentials(user)
                     return
