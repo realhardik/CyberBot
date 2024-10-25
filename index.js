@@ -261,13 +261,14 @@ const db = new class {
         }
     }
 
-    async updateUser(contact, collection, updatedData) {
+    async updateUser(id, collection, updatedData) {
         try {
             const updatedUser = await this.db.collection(collection).findOneAndUpdate(
-                { contact: contact },
+                { contact: id },
                 { $set: updatedData },
-                { returnDocument: "after" }
+                { returnDocument: "after", upsert: false }
             );
+            console.log(updatedUser)
             if (!updatedUser.value) {
                 console.log("User not found.");
                 return false;
@@ -282,7 +283,6 @@ const db = new class {
 
     async addConversation(contact, author, conversation) {
         try {
-
             const msg = new this.history({
                 contact: contact,
                 sessionId: 1,
@@ -626,7 +626,8 @@ class Flow {
                         name: user.name,
                         age: user.age,
                         email: user.email,
-                        premium_user: false
+                        premium_user: false,
+                        verified: "Yes"
                     })
                     await this.bot.sendMessage(sender, "Now, we will ask questions related to the cyberthreat.")
                     this.essentials(user)
